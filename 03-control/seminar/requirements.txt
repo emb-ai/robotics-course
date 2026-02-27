@@ -1,0 +1,10 @@
+numpy
+scipy
+matplotlib
+jupyter
+ipython
+ipywidgets
+pytorch-kinematics
+trimesh
+cvxpy
+torch
