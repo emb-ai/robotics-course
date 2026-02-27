@@ -50,97 +50,127 @@
 <td><a href="03-control/lecture/lecture.ipynb">notebook</a></td>
 </tr>
 <tr>
-<td></td>
-<td></td>
+<td>Control strategies for the cart-pole system</td>
+<td><a href="03-control/seminar/seminar.ipynb">notebook</a></td>
 </tr>
 <tr>
 <td rowspan="2">4</td>
 <td rowspan="2">Mar 5</td>
-<td></td>
+<td>Mobile robots</td>
 <td></td>
 </tr>
 <tr>
-<td></td>
+<td>Planning and navigation</td>
 <td></td>
 </tr>
 <tr>
 <td rowspan="2">5</td>
 <td rowspan="2">Mar 12</td>
-<td></td>
+<td>Senors and perception</td>
 <td></td>
 </tr>
 <tr>
-<td></td>
+<td>2D SLAM</td>
 <td></td>
 </tr>
 <tr>
 <td rowspan="2">6</td>
 <td rowspan="2">Mar 19</td>
-<td></td>
+<td>Simluation and sim2real</td>
 <td></td>
 </tr>
 <tr>
-<td></td>
+<td>Sim2real in MuJoCo</td>
 <td></td>
 </tr>
 <tr>
 <td rowspan="2">7</td>
 <td rowspan="2">Mar 26</td>
-<td></td>
+<td>Legged locomotion and stability, path planning</td>
 <td></td>
 </tr>
 <tr>
-<td></td>
+<td>Walking humanoid</td>
 <td></td>
 </tr>
 <tr>
 <td rowspan="2">8</td>
 <td rowspan="2">Apr 2</td>
-<td></td>
+<td>ROS2 and other robotics software</td>
 <td></td>
 </tr>
 <tr>
-<td></td>
+<td>Using ROS2</td>
 <td></td>
 </tr>
 <tr>
 <td rowspan="2">9</td>
 <td rowspan="2">Apr 9</td>
-<td></td>
+<td>Robotics data and benchmarks</td>
 <td></td>
 </tr>
 <tr>
-<td></td>
+<td>Trajectory collection with teleoperation</td>
 <td></td>
 </tr>
 <tr>
 <td rowspan="2">10</td>
 <td rowspan="2">Apr 16</td>
-<td></td>
+<td>Grasping, affordances and visuomotor policies</td>
 <td></td>
 </tr>
 <tr>
-<td></td>
+<td>Grasping and diffusion policy for manipulation</td>
 <td></td>
 </tr>
 <tr>
 <td rowspan="2">11</td>
 <td rowspan="2">Apr 23</td>
-<td></td>
+<td>Modern 3D vision</td>
 <td></td>
 </tr>
 <tr>
-<td></td>
+<td>3D reconstruction pipeline</td>
 <td></td>
 </tr>
 <tr>
 <td rowspan="2">12</td>
 <td rowspan="2">Apr 30</td>
-<td></td>
+<td>VLAs</td>
 <td></td>
 </tr>
 <tr>
+<td>Making a VLA on top of VLM</td>
 <td></td>
+</tr>
+<tr>
+<td rowspan="2">13</td>
+<td rowspan="2">May 7</td>
+<td>Modern planning</td>
+<td></td>
+</tr>
+<tr>
+<td>LLM-based task planner</td>
+<td></td>
+</tr>
+<tr>
+<td rowspan="2">14</td>
+<td rowspan="2">May 14</td>
+<td>World models</td>
+<td></td>
+</tr>
+<tr>
+<td>Experimenting with Dreamer</td>
+<td></td>
+</tr>
+<tr>
+<td rowspan="2">15</td>
+<td rowspan="2">May 21</td>
+<td>Multi-agent coordination and human-robot collaboration</td>
+<td></td>
+</tr>
+<tr>
+<td>Agent coordination via MAPF</td>
 <td></td>
 </tr>
 </tbody>
