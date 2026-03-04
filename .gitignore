@@ -243,3 +243,9 @@ Icon[]
 Network Trash Folder
 Temporary Items
 .apdisk
+
+# Dev files
+dev/
+TODO
+TODO.md
+**/reference_solution/

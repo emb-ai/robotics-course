@@ -1,0 +1,12 @@
+PyMuPDF
+cvxpy
+ipython
+ipywidgets
+jupyter
+matplotlib
+mediapy
+numpy
+pytorch-kinematics
+scipy
+torch
+trimesh

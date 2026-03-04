@@ -1,0 +1,9 @@
+services:
+  homework-tests:
+    build:
+      context: ../../..
+      dockerfile: week-1/homework/container/Dockerfile
+    volumes:
+      - ../../..:/app:ro
+    working_dir: /app/week-1/homework
+    command: ["pytest", "tests", "hidden_tests", "-v"]
