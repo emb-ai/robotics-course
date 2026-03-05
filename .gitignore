@@ -215,6 +215,7 @@ __marimo__/
 .streamlit/secrets.toml
 
 .cursor/
+.cursorignore
 .vscode/
 
 

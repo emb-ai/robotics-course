@@ -27,11 +27,11 @@
 <td rowspan="2">1</td>
 <td rowspan="2">Feb 12</td>
 <td>Intro</td>
-<td><a href="01-intro-and-kinematics/lecture/intro.pdf">slides</a></td>
+<td><a href="01-intro-and-kinematics/literature/intro.pdf">slides</a></td>
 </tr>
 <tr>
 <td>Robot kinematics</td>
-<td><a href="01-intro-and-kinematics/seminar/seminar.ipynb">notebook</a></td>
+<td><a href="01-intro-and-kinematics/class.ipynb">notebook</a></td>
 </tr>
 <tr>
 <td rowspan="2">2</td>
@@ -47,11 +47,11 @@
 <td rowspan="2">3</td>
 <td rowspan="2">Feb 26</td>
 <td>Classical control and motion planning</td>
-<td><a href="03-control/lecture/lecture.ipynb">notebook</a></td>
+<td><a href="03-control/class.ipynb">notebook</a></td>
 </tr>
 <tr>
 <td>Control strategies for the cart-pole system</td>
-<td><a href="03-control/seminar/seminar.ipynb">notebook</a></td>
+<td><a href="03-control/class.ipynb">notebook</a></td>
 </tr>
 <tr>
 <td rowspan="2">4</td>

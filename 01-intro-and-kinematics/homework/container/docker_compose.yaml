@@ -2,8 +2,8 @@ services:
   homework-tests:
     build:
       context: ../../..
-      dockerfile: week-1/homework/container/Dockerfile
+      dockerfile: 01-intro-and-kinematics/homework/container/Dockerfile
     volumes:
       - ../../..:/app:ro
-    working_dir: /app/week-1/homework
-    command: ["pytest", "tests", "hidden_tests", "-v"]
+    working_dir: /app/01-intro-and-kinematics/homework
+    command: ["pytest", "tests", "-v"]

@@ -4,7 +4,7 @@ from typing import Callable
 
 import numpy as np
 
-from reference_solution.problem1_common import Configuration, XYZConfiguration
+from lib.broom_types import Configuration, XYZConfiguration
 
 
 def gate_pass(
