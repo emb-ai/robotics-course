@@ -5,8 +5,8 @@
 <table>
     <tbody>
         <tr>
-            <td align="center"><a href="">YouTube</a></td>
-            <td align="center"><a href="">VKVideo</a></td>
+            <td align="center"><a href="https://www.youtube.com/playlist?list=PLWI0ElBVXPkZe6BKZMG3Z2gEQEzxa2kmY">YouTube</a></td>
+            <td align="center"><a href="https://vkvideo.ru/playlist/-227352629_11">VKVideo</a></td>
         </tr>
     </tbody>
 </table>
