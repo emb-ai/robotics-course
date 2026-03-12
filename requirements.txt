@@ -1,4 +1,3 @@
-PyMuPDF
 cvxpy
 ipython
 ipywidgets
@@ -6,7 +5,9 @@ jupyter
 matplotlib
 mediapy
 numpy
+PyMuPDF
 pytorch-kinematics
 scipy
+sympy
 torch
 trimesh

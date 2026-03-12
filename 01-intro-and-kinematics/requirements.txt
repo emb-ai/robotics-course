@@ -1,9 +1,0 @@
-numpy
-scipy
-matplotlib
-jupyter
-ipython
-pytorch-kinematics
-mediapy
-ipywidgets
-trimesh

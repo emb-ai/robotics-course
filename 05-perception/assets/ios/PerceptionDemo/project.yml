@@ -1,0 +1,37 @@
+name: PerceptionDemo
+options:
+  bundleIdPrefix: com.ai-in-robotics
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "15.0"
+  generateEmptyDirectories: true
+
+settings:
+  SWIFT_VERSION: "5.9"
+  TARGETED_DEVICE_FAMILY: "1"
+  IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+  SWIFT_STRICT_CONCURRENCY: minimal
+
+targets:
+  PerceptionDemo:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: PerceptionDemo/Sources
+    resources:
+      - path: PerceptionDemo/Resources
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.ai-in-robotics.PerceptionDemo
+      INFOPLIST_FILE: PerceptionDemo/Resources/Info.plist
+    dependencies:
+      - framework: ARKit.framework
+        embed: false
+      - framework: CoreMotion.framework
+        embed: false
+      - framework: AVFoundation.framework
+        embed: false
+      - framework: Accelerate.framework
+        embed: false
+      - framework: Network.framework
+        embed: false

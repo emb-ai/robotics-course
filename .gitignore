@@ -218,7 +218,6 @@ __marimo__/
 .cursorignore
 .vscode/
 
-
 # General
 .DS_Store
 __MACOSX/
@@ -244,9 +243,3 @@ Icon[]
 Network Trash Folder
 Temporary Items
 .apdisk
-
-# Dev files
-dev/
-TODO
-TODO.md
-**/reference_solution/

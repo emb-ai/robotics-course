@@ -1,0 +1,349 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 63;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0EF4E1D7D82B7E55DC888837 /* Network.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5670DE9DACA498D7102E4864 /* Network.framework */; };
+		10B0A61DB23965BFA8008708 /* PacketEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A8F6AE5845DF75AB074767 /* PacketEncoder.swift */; };
+		20BA1A5BE32B65596888EE7E /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50C320111053FC6C0C8EC5AC /* CoreMotion.framework */; };
+		5476EFA0CCE7FF99DEDBF35E /* ARKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EA1C817388068D0A2F5DE509 /* ARKit.framework */; };
+		665490005475B44BC9DE8760 /* PerceptionDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6E24BD53C549EF875A03209 /* PerceptionDemoApp.swift */; };
+		735927BF8B66A97950EE1FAE /* USBTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C3CA8BBCAB9893E52694783 /* USBTransport.swift */; };
+		9110D38FA7F210B01D2D0D80 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C39A3D97924D89D6AA839BB9 /* AVFoundation.framework */; };
+		C1A6D835DD829EF6789B81B9 /* SensorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D221DE2025231CF94AE27DDE /* SensorService.swift */; };
+		CFA88E1067F0B8422789EE71 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 030D99611FB2D245C207619A /* ContentView.swift */; };
+		CFD69EA9C4D29C419A5D8A18 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 568C466DD987450C7890859F /* Accelerate.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		030D99611FB2D245C207619A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		50C320111053FC6C0C8EC5AC /* CoreMotion.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CoreMotion.framework; sourceTree = "<group>"; };
+		5670DE9DACA498D7102E4864 /* Network.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Network.framework; sourceTree = "<group>"; };
+		568C466DD987450C7890859F /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Accelerate.framework; sourceTree = "<group>"; };
+		75DADC0F7BCFE08DBB45176C /* PerceptionDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PerceptionDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9C3CA8BBCAB9893E52694783 /* USBTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = USBTransport.swift; sourceTree = "<group>"; };
+		B0A8F6AE5845DF75AB074767 /* PacketEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketEncoder.swift; sourceTree = "<group>"; };
+		C39A3D97924D89D6AA839BB9 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = AVFoundation.framework; sourceTree = "<group>"; };
+		C6E24BD53C549EF875A03209 /* PerceptionDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerceptionDemoApp.swift; sourceTree = "<group>"; };
+		D221DE2025231CF94AE27DDE /* SensorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorService.swift; sourceTree = "<group>"; };
+		EA1C817388068D0A2F5DE509 /* ARKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = ARKit.framework; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		1980E3DB4C7B426736A09D19 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5476EFA0CCE7FF99DEDBF35E /* ARKit.framework in Frameworks */,
+				20BA1A5BE32B65596888EE7E /* CoreMotion.framework in Frameworks */,
+				9110D38FA7F210B01D2D0D80 /* AVFoundation.framework in Frameworks */,
+				CFD69EA9C4D29C419A5D8A18 /* Accelerate.framework in Frameworks */,
+				0EF4E1D7D82B7E55DC888837 /* Network.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		B1B5689552D7224268345CA0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				75DADC0F7BCFE08DBB45176C /* PerceptionDemo.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		BD2164FD2AD9F51BF7F4A310 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				568C466DD987450C7890859F /* Accelerate.framework */,
+				EA1C817388068D0A2F5DE509 /* ARKit.framework */,
+				C39A3D97924D89D6AA839BB9 /* AVFoundation.framework */,
+				50C320111053FC6C0C8EC5AC /* CoreMotion.framework */,
+				5670DE9DACA498D7102E4864 /* Network.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		CF2A058A4E6877D3C109DB99 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				030D99611FB2D245C207619A /* ContentView.swift */,
+				B0A8F6AE5845DF75AB074767 /* PacketEncoder.swift */,
+				C6E24BD53C549EF875A03209 /* PerceptionDemoApp.swift */,
+				D221DE2025231CF94AE27DDE /* SensorService.swift */,
+				9C3CA8BBCAB9893E52694783 /* USBTransport.swift */,
+			);
+			name = Sources;
+			path = PerceptionDemo/Sources;
+			sourceTree = "<group>";
+		};
+		DEA37DADA11D4A4D3F221546 = {
+			isa = PBXGroup;
+			children = (
+				CF2A058A4E6877D3C109DB99 /* Sources */,
+				BD2164FD2AD9F51BF7F4A310 /* Frameworks */,
+				B1B5689552D7224268345CA0 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A464EB2D9CA677E38183A38D /* PerceptionDemo */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B87C083080D4B6D6F3B2C2EF /* Build configuration list for PBXNativeTarget "PerceptionDemo" */;
+			buildPhases = (
+				2BFC968B9E5A20AB0D83BBA2 /* Sources */,
+				1980E3DB4C7B426736A09D19 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PerceptionDemo;
+			packageProductDependencies = (
+			);
+			productName = PerceptionDemo;
+			productReference = 75DADC0F7BCFE08DBB45176C /* PerceptionDemo.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		50454A266746F4B2DE9FB74C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1500;
+			};
+			buildConfigurationList = F7573C930674624F8155C7C9 /* Build configuration list for PBXProject "PerceptionDemo" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = DEA37DADA11D4A4D3F221546;
+			minimizedProjectReferenceProxies = 1;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A464EB2D9CA677E38183A38D /* PerceptionDemo */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		2BFC968B9E5A20AB0D83BBA2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CFA88E1067F0B8422789EE71 /* ContentView.swift in Sources */,
+				10B0A61DB23965BFA8008708 /* PacketEncoder.swift in Sources */,
+				665490005475B44BC9DE8760 /* PerceptionDemoApp.swift in Sources */,
+				C1A6D835DD829EF6789B81B9 /* SensorService.swift in Sources */,
+				735927BF8B66A97950EE1FAE /* USBTransport.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		39F3148564ED71866C96D9DD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = K6W28L9ZUA;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = PerceptionDemo/Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.ai-in-robotics.PerceptionDemo";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		5E0C3CF40D034AE7DD911D93 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		A7DD716998EC01BCBD90CEC5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = K6W28L9ZUA;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = PerceptionDemo/Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.ai-in-robotics.PerceptionDemo";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D8CEA2115F0F8403401A5C78 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		B87C083080D4B6D6F3B2C2EF /* Build configuration list for PBXNativeTarget "PerceptionDemo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A7DD716998EC01BCBD90CEC5 /* Debug */,
+				39F3148564ED71866C96D9DD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F7573C930674624F8155C7C9 /* Build configuration list for PBXProject "PerceptionDemo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5E0C3CF40D034AE7DD911D93 /* Debug */,
+				D8CEA2115F0F8403401A5C78 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 50454A266746F4B2DE9FB74C /* Project object */;
+}
