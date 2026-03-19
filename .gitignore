@@ -146,6 +146,9 @@ activemq-data/
 # SageMath parsed files
 *.sage.py
 
+# Autograder temp dirs (created by docker_runner.py when HOST_REPO_ROOT is set)
+.autograder-tmp/
+
 # Environments
 .env
 .envrc
@@ -214,8 +217,9 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-.cursor/
 .cursorignore
+.cursorindexingignore
+/.cursor/
 .vscode/
 
 # General
@@ -243,3 +247,12 @@ Icon[]
 Network Trash Folder
 Temporary Items
 .apdisk
+
+# Tools runtime data
+tools/data/
+tools/logs/
+
+
+/dev/
+**/reference_solution/
+/tools/deploy/

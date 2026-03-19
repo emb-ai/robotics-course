@@ -1,0 +1,6 @@
+# Minimal deps for pytest in container (avoid root requirements.txt / torch).
+pytest
+numpy
+scipy
+pyquaternion
+python-fcl

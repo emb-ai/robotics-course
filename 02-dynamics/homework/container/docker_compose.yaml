@@ -1,0 +1,11 @@
+# REPO_ROOT must be absolute repo path (set by container/run.sh or autograder).
+services:
+  homework-tests:
+    build:
+      context: ${REPO_ROOT}
+      dockerfile: 02-dynamics/homework/container/Dockerfile
+    volumes:
+      - ${REPO_ROOT}:/app:ro
+      - ${REPO_ROOT}/dev/02-dynamics/homework/reference_solution:/app/02-dynamics/homework/reference_solution:ro
+      - ${REPO_ROOT}/dev/02-dynamics/homework/hidden_tests:/app/02-dynamics/homework/hidden_tests:ro
+    working_dir: /app/02-dynamics/homework

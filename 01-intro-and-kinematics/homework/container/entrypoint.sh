@@ -1,8 +1,35 @@
 #!/usr/bin/env bash
 set -e
-cd /app/01-intro-and-kinematics/homework
-if [ -d "reference_solution" ] && [ -n "$(ls -A reference_solution 2>/dev/null)" ]; then
-  exec pytest tests/ hidden_tests/ -v "$@"
+export PYTEST_CACHE_DIR="${PYTEST_CACHE_DIR:-/tmp/pytest-cache}"
+mkdir -p "$PYTEST_CACHE_DIR"
+
+HW_SRC=/app/01-intro-and-kinematics/homework
+
+if [ -d "$HW_SRC/reference_solution" ] && [ -n "$(ls -A "$HW_SRC/reference_solution" 2>/dev/null)" ]; then
+  rm -rf /tmp/hw
+  cp -rL "$HW_SRC" /tmp/hw
+  cd /tmp/hw
+  # Autograder bind-mounts student code onto solutions/ (GRADING_STUDENT_SUBMISSION=1).
+  # Otherwise (run.sh, local QA): copy reference into solutions/ so tests run the reference.
+  if [ "${GRADING_STUDENT_SUBMISSION:-}" != "1" ]; then
+    for f in reference_solution/*.py; do
+      [ -f "$f" ] || continue
+      bn=$(basename "$f")
+      [ "$bn" = "__init__.py" ] && continue
+      cp "$f" "solutions/$bn"
+    done
+  fi
+  BLOCK_REFERENCE_IMPORT=1 pytest tests/ -v "$@" || true
+  r1=$?
+  pytest tests/ hidden_tests/ -v --import-mode=importlib "$@"
+  r2=$?
+  exit $((r1 | r2))
 else
-  exec pytest tests/ -v "$@"
+  cd "$HW_SRC"
+  # When args are given (autograder partial submission), run only those test paths to avoid importing missing solution modules
+  if [ $# -gt 0 ]; then
+    exec pytest -v "$@"
+  else
+    exec pytest tests/ -v "$@"
+  fi
 fi

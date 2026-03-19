@@ -90,7 +90,7 @@ def simulate_cartpole(
 
     for i in range(n_steps):
         u = controller(ts[i], states[i])
-        u = np.clip(u, -p.f_max, p.f_max)
+        # u = np.clip(u, -p.f_max, p.f_max)
         controls[i] = u
 
         def f_closed(t, s, *_args):

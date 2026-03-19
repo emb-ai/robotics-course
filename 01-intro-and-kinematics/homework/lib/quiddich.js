@@ -71,14 +71,14 @@ function makeGizmo(origin) {
   group.position.copy(origin);
   const zero = new THREE.Vector3(0, 0, 0);
 
-  const arrowX = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), zero, ARROW_LEN, 0xe74c3c);
-  const arrowY = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), zero, ARROW_LEN, 0x2ecc71);
+  const arrowX = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), zero, ARROW_LEN, 0x2ecc71);
+  const arrowY = new THREE.ArrowHelper(new THREE.Vector3(0, -1, 0), zero, ARROW_LEN, 0xe74c3c);
   const arrowZ = new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), zero, ARROW_LEN, 0x3498db);
   group.add(arrowX);
   group.add(arrowY);
   group.add(arrowZ);
 
-  const headingGeom = new THREE.BufferGeometry().setFromPoints(circlePoints(GIZMO_RADIUS, "xz"));
+  const headingGeom = new THREE.BufferGeometry().setFromPoints(circlePoints(GIZMO_RADIUS, "xy"));
   const headingLine = new THREE.Line(headingGeom, new THREE.LineBasicMaterial({ color: 0xf1c40f }));
   group.add(headingLine);
 
@@ -243,6 +243,7 @@ function run() {
       scene.add(glbWrapper);
 
       objects.HarryPotter = findByName(gltfScene, "HarryPotter");
+      objects.HPEmpty = findByName(gltfScene, "HPEmpty");
       objects.Slytherin = findByName(gltfScene, "Slytherin");
       objects.Ring1 = findByName(gltfScene, "Ring");
       objects.Snitch = findByName(gltfScene, "Snitch");
@@ -250,6 +251,9 @@ function run() {
       objects.BigNo1 = findByName(gltfScene, "BigNo1");
       objects.BigNo2 = findByName(gltfScene, "BigNo2");
 
+      glbWrapper.updateMatrixWorld(true);
+      const hpWorldQ = new THREE.Quaternion();
+      objects.HarryPotter.getWorldQuaternion(hpWorldQ);
       const hp = getWorldPosition(objects.HarryPotter, new THREE.Vector3()) || new THREE.Vector3(0, 0, 0);
       const sl = getWorldPosition(objects.Slytherin, new THREE.Vector3()) || new THREE.Vector3(0, 0, 0);
       const r1 = getWorldPosition(objects.Ring1, new THREE.Vector3()) || new THREE.Vector3(0, 0, 0);
@@ -259,6 +263,8 @@ function run() {
       const b2 = getWorldPosition(objects.BigNo2, new THREE.Vector3()) || new THREE.Vector3(0, 0, 0);
 
       const gizmo = makeGizmo(hp.clone());
+      gizmo.quaternion.copy(hpWorldQ);
+      gizmo.updateMatrixWorld();
       overlayRoot.add(gizmo);
       gizmo.visible = false;
 
@@ -310,25 +316,25 @@ function run() {
       overlayRoot.add(forwardArrowBigNo2);
       forwardArrowBigNo2.visible = false;
 
-      const labelX = makeLabel3D("x");
-      labelX.position.copy(hp).add(new THREE.Vector3(ARROW_LEN + 0.25, 0, 0));
-      scene.add(labelX);
+      const labelX = makeLabel3D("y");
+      labelX.position.set(ARROW_LEN + 0.25, 0, 0);
+      gizmo.add(labelX);
       labelX.visible = false;
-      const labelY = makeLabel3D("z");
-      labelY.position.copy(hp).add(new THREE.Vector3(0, ARROW_LEN + 0.25, 0));
-      scene.add(labelY);
+      const labelY = makeLabel3D("x");
+      labelY.position.set(0, -(ARROW_LEN + 0.25), 0);
+      gizmo.add(labelY);
       labelY.visible = false;
-      const labelZ = makeLabel3D("y");
-      labelZ.position.copy(hp).add(new THREE.Vector3(0, 0, ARROW_LEN + 0.25));
-      scene.add(labelZ);
+      const labelZ = makeLabel3D("z");
+      labelZ.position.set(0, 0, ARROW_LEN + 0.25);
+      gizmo.add(labelZ);
       labelZ.visible = false;
       const labelTheta = makeLabel3D("θ");
-      labelTheta.position.copy(hp).add(new THREE.Vector3(GIZMO_RADIUS * 0.85, 0, GIZMO_RADIUS * 0.85));
-      scene.add(labelTheta);
+      labelTheta.position.set(0, -GIZMO_RADIUS * 0.85, GIZMO_RADIUS * 0.85);
+      gizmo.add(labelTheta);
       labelTheta.visible = false;
       const labelPhi = makeLabel3D("φ");
-      labelPhi.position.copy(hp).add(new THREE.Vector3(0, GIZMO_RADIUS * 0.85, GIZMO_RADIUS * 0.85));
-      scene.add(labelPhi);
+      labelPhi.position.set(-GIZMO_RADIUS * 0.85, -GIZMO_RADIUS * 0.85, 0);
+      gizmo.add(labelPhi);
       labelPhi.visible = false;
 
       const ringCurve = new THREE.CubicBezierCurve3(sl, c1, c2, r1);

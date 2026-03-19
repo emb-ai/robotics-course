@@ -1,0 +1,10 @@
+# Week registry: week_id -> topic_slug only.
+# Detailed config (solution_files, problem_ids, points, metrics, limits) lives in
+# {topic_slug}/homework/autograder.yaml.
+# compose_file is auto-discovered at {topic_slug}/homework/container/docker_compose.yaml.
+
+"01":
+  topic_slug: 01-intro-and-kinematics
+
+"02":
+  topic_slug: 02-dynamics

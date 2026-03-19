@@ -1,0 +1,78 @@
+# Oracle + SGLang for cloud.ru Distributed Train (binary job).
+# Follows cloud.ru custom image guide (user 1000, /home/jovyan, OpenSSH 2222, OpenMPI for mpirun).
+# https://cloud.ru/docs/... (Distributed Train — custom Docker image)
+
+FROM lmsysorg/sglang:latest
+
+USER root
+
+# Free UID/GID 1000, then create user exactly as in cloud.ru docs (user:user, /home/user, /home/jovyan).
+RUN set -e; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends ca-certificates; \
+    if getent passwd 1000 >/dev/null; then \
+      userdel -f "$(getent passwd 1000 | cut -d: -f1)" 2>/dev/null || true; \
+    fi; \
+    if getent group 1000 >/dev/null; then \
+      groupmod -g 10001 "$(getent group 1000 | cut -d: -f1)" 2>/dev/null || true; \
+    fi; \
+    groupadd -g 1000 user; \
+    useradd -u 1000 -g user -m -s /bin/bash user; \
+    mkdir -p /home/user /home/jovyan /home/user/.ssh; \
+    chown user:user /home/user /home/jovyan; \
+    chmod 700 /home/user/.ssh; \
+    chown user:user /home/user/.ssh
+
+# cloud.ru: OpenSSH for MPI between containers; curl/wget/bzip2 per docs; OpenMPI so mpirun exists (worker readiness).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssh-server openssh-client \
+    curl wget bzip2 \
+    openmpi-bin libopenmpi-dev \
+    git ripgrep \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /var/run/sshd /run/sshd /etc/ssh/.ssh_aicloud \
+    && ssh-keygen -A
+
+# OpenSSH layout per cloud.ru documentation (sshd_config.d/mlspace.conf).
+# Do not chmod 600 /etc/ssh/* — that strips +x from *.d dirs and breaks Include; lock host keys only.
+RUN echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config.d/mlspace.conf \
+    && echo "UsePAM no" > /etc/ssh/sshd_config.d/mlspace.conf \
+    && echo "PubkeyAcceptedAlgorithms +ssh-rsa" >> /etc/ssh/sshd_config.d/mlspace.conf \
+    && echo "Port 2222" >> /etc/ssh/sshd_config.d/mlspace.conf \
+    && echo "PidFile /run/sshd/sshd.pid" >> /etc/ssh/sshd_config.d/mlspace.conf \
+    && echo "AuthorizedKeysCommand /usr/bin/cat /etc/ssh/.ssh_aicloud/%u_keys" >> /etc/ssh/sshd_config.d/mlspace.conf \
+    && echo "AuthorizedKeysCommandUser root" >> /etc/ssh/sshd_config.d/mlspace.conf \
+    && chmod 755 /etc/ssh /etc/ssh/sshd_config.d /etc/ssh/ssh_config.d \
+    && chmod 644 /etc/ssh/sshd_config /etc/ssh/ssh_config \
+    && find /etc/ssh/sshd_config.d /etc/ssh/ssh_config.d -type f -exec chmod 644 {} + \
+    && find /etc/ssh -maxdepth 1 -type f -name 'ssh_host_*_key' -exec chmod 600 {} + \
+    && chown user:user /etc/ssh/ssh_host_* \
+    && chown user:user /run/sshd
+
+# Profile for user + root (cloud.ru recommends /etc/profile.d for env visibility).
+RUN echo 'export PATH="/usr/bin:$PATH"' > /etc/profile.d/mlspace.sh \
+    && echo "export PATH=\$PATH" >> /etc/profile.d/mlspace.sh
+
+# PEP 668: Debian system Python blocks pip --user; container OK to use break-system-packages.
+RUN python3 -m pip install --no-cache-dir --break-system-packages \
+    httpx nbformat pydantic python-dotenv pyyaml uvicorn fastapi requests
+
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+RUN curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh || true
+
+# Course materials (week folders); Oracle code + weeks.yaml live under /opt/oracle/tools (COPY below).
+ARG COURSE_REPO_URL=https://github.com/emb-ai/robotics-course.git
+ARG COURSE_REPO_BRANCH=2026
+RUN git clone --depth 1 --branch "${COURSE_REPO_BRANCH}" "${COURSE_REPO_URL}" /opt/course-repo \
+    && chown -R user:user /opt/course-repo
+
+# Build from repo root: docker build -f tools/oracle/Dockerfile.cloudru -t ... .
+COPY tools /opt/oracle/tools
+COPY tools/oracle/cloudru/launch_oracle.sh /opt/oracle/launch_oracle.sh
+RUN chmod +x /opt/oracle/launch_oracle.sh && chown -R user:user /opt/oracle
+
+USER user
+WORKDIR /home/user
+
+SHELL ["/bin/bash", "-cu"]

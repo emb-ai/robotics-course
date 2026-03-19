@@ -1,0 +1,25 @@
+# Per-homework autograder config: solutions, problem mapping, points, metrics, limits
+# Student submissions are flat files mounted into solutions/
+
+solution_files:
+  - kin_energy.py
+  - ode_solvers.py
+  - constraints_manager.py
+  - constraints.py
+  - penalty.py
+
+problem_ids:
+  test_kin_energy.py: kin_energy
+  test_joints.py: joints
+  test_penalty.py: penalty
+
+points:
+  kin_energy: 5
+  joints: 5
+  penalty: 5
+
+limits:
+  timeout_sec: 120
+  memory_mb: 512
+  cpus: 1
+  network: none

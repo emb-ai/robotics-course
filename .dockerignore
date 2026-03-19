@@ -1,0 +1,13 @@
+# Build context for tools/deploy/Dockerfile.tools (context = repo root)
+.git
+dev
+.autograder-tmp
+__pycache__
+*.pyc
+.pytest_cache
+.ipynb_checkpoints
+.venv
+venv
+node_modules
+*.egg-info
+.DS_Store

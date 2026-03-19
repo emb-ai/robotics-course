@@ -1,10 +1,11 @@
+# REPO_ROOT must be absolute repo path (set by container/run.sh or autograder).
 services:
   homework-tests:
     build:
-      context: ../../..
+      context: ${REPO_ROOT}
       dockerfile: 01-intro-and-kinematics/homework/container/Dockerfile
     volumes:
-      - ../../..:/app:ro
-      - ../../../dev/01-intro-and-kinematics/homework/reference_solution:/app/01-intro-and-kinematics/homework/reference_solution:ro
-      - ../../../dev/01-intro-and-kinematics/homework/hidden_tests:/app/01-intro-and-kinematics/homework/hidden_tests:ro
+      - ${REPO_ROOT}:/app:ro
+      - ${REPO_ROOT}/dev/01-intro-and-kinematics/homework/reference_solution:/app/01-intro-and-kinematics/homework/reference_solution:ro
+      - ${REPO_ROOT}/dev/01-intro-and-kinematics/homework/hidden_tests:/app/01-intro-and-kinematics/homework/hidden_tests:ro
     working_dir: /app/01-intro-and-kinematics/homework

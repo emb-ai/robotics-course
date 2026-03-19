@@ -1,0 +1,27 @@
+# Per-homework autograder config: solutions, problem mapping, points, metrics, limits
+
+solution_files:
+  - beads.py
+  - broom_racing.py
+  - so101_ik.py
+
+problem_ids:
+  test_beads.py: beads
+  test_broom_racing.py: broom_racing
+  test_so101_ik.py: so101_ik
+
+points:
+  beads: 10
+  broom_racing: 15
+  so101_ik: 10
+
+metrics:
+  beads:
+    name: bounding_sphere_radius
+    direction: minimize
+
+limits:
+  timeout_sec: 120
+  memory_mb: 512
+  cpus: 1
+  network: none
