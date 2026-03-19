@@ -30,7 +30,8 @@ xcodegen generate
 open PerceptionDemo.xcodeproj
 ```
 
-Connect your iPhone, select it as the build target, and run.
+Connect your iPhone, select it as the build target, choose your own
+development team in Signing if Xcode asks for it, and run.
 
 ## Usage
 

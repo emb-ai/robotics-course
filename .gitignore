@@ -222,6 +222,14 @@ __marimo__/
 /.cursor/
 .vscode/
 
+# Xcode user-specific files
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcuserstate
+xcuserdata/
+*.xcuserdatad/
+DerivedData/
+
 # General
 .DS_Store
 __MACOSX/

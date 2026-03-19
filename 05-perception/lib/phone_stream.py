@@ -237,6 +237,8 @@ class PhoneReplaySource:
                 break
 
     def start(self) -> None:
+        if self.is_running():
+            return
         self._stop_event.clear()
         self._thread = threading.Thread(target=self._replay_loop, daemon=True)
         self._thread.start()
@@ -245,6 +247,7 @@ class PhoneReplaySource:
         self._stop_event.set()
         if self._thread:
             self._thread.join(timeout=3.0)
+            self._thread = None
 
     def is_running(self) -> bool:
         return self._thread is not None and self._thread.is_alive()
@@ -276,6 +279,8 @@ class PhoneUSBSource:
         self._connected = False
 
     def start(self) -> None:
+        if self.is_running():
+            return
         from lib.ws_server import PerceptionUSBServer
 
         def _on_connect():
@@ -299,6 +304,8 @@ class PhoneUSBSource:
     def stop(self) -> None:
         if self._server:
             self._server.stop()
+            self._server = None
+        self._connected = False
 
     def is_running(self) -> bool:
         return self._server is not None and self._server.is_running()
@@ -350,6 +357,8 @@ class PhoneWebSocketSource:
         self._connected = False
 
     def start(self) -> None:
+        if self.is_running():
+            return
         from lib.ws_server import PerceptionWSServer
 
         def _on_connect():
@@ -376,6 +385,8 @@ class PhoneWebSocketSource:
     def stop(self) -> None:
         if self._server:
             self._server.stop()
+            self._server = None
+        self._connected = False
 
     def is_running(self) -> bool:
         return self._server is not None and self._server.is_running()
