@@ -69,6 +69,32 @@ def test_list_weeks():
     assert "01" in weeks
 
 
+def test_list_weeks_with_homework_container():
+    weeks = week_config.list_weeks_with_homework_container()
+    assert "01" in weeks
+    assert "02" in weeks
+    assert set(weeks).issubset(set(week_config.list_weeks()))
+
+
+def test_list_weeks_with_homework_container_filters_by_filesystem(tmp_path, monkeypatch):
+    slug = "fake-topic-for-container-test"
+    cdir = tmp_path / slug / "homework" / "container"
+    cdir.mkdir(parents=True)
+    (cdir / "run.sh").write_text("")
+    (cdir / "docker_compose.yaml").write_text("")
+    incomplete = tmp_path / "incomplete-topic" / "homework" / "container"
+    incomplete.mkdir(parents=True)
+    (incomplete / "run.sh").write_text("")
+
+    monkeypatch.setattr(week_config, "list_weeks", lambda: ["01", "02"])
+
+    def fake_slug(wid: str) -> str:
+        return slug if wid == "01" else "incomplete-topic"
+
+    monkeypatch.setattr(week_config, "get_topic_slug", fake_slug)
+    assert week_config.list_weeks_with_homework_container(repo=tmp_path) == ["01"]
+
+
 def test_get_repo_root_from_env(monkeypatch):
     monkeypatch.setenv("AI_ROBOTICS_REPO_ROOT", "/tmp/custom_root")
     root = week_config.get_repo_root()

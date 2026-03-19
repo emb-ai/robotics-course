@@ -1,6 +1,9 @@
 # REPO_ROOT must be absolute repo path (set by container/run.sh or autograder).
 services:
   homework-tests:
+    image: ai_in_robotics_02_dynamics_hw_tests
+    environment:
+      GRADING_STUDENT_SUBMISSION: "0"
     build:
       context: ${REPO_ROOT}
       dockerfile: 02-dynamics/homework/container/Dockerfile

@@ -87,3 +87,19 @@ def get_limits(week_id: str) -> dict[str, Any]:
 
 def list_weeks() -> list[str]:
     return [str(k) for k in load_weeks_yaml().keys()]
+
+
+def list_weeks_with_homework_container(repo: Path | None = None) -> list[str]:
+    """Week IDs from ``weeks.yaml`` that have ``homework/container/run.sh`` and ``docker_compose.yaml``.
+
+    Use ``repo`` to resolve container paths (defaults to :func:`get_repo_root`). Week metadata still
+    comes from ``weeks.yaml`` via :func:`get_topic_slug`.
+    """
+    root = repo if repo is not None else get_repo_root()
+    out: list[str] = []
+    for week_id in list_weeks():
+        slug = get_topic_slug(week_id)
+        container_dir = root / slug / "homework" / "container"
+        if (container_dir / "run.sh").is_file() and (container_dir / "docker_compose.yaml").is_file():
+            out.append(week_id)
+    return out

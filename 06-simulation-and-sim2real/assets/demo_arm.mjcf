@@ -1,0 +1,58 @@
+<mujoco model="demo_arm">
+  <option timestep="0.002" gravity="0 0 -9.81"/>
+  <compiler angle="radian"/>
+
+  <default>
+    <joint damping="1.0"/>
+    <geom friction="0.8 0.005 0.0001" rgba="0.6 0.6 0.65 1"/>
+  </default>
+
+  <asset>
+    <texture type="2d" name="grid_tex" builtin="checker" width="128" height="128"
+             rgb1="0.9 0.9 0.92" rgb2="0.7 0.7 0.74"/>
+    <material name="grid_mat" texture="grid_tex" texrepeat="4 4"/>
+  </asset>
+
+  <worldbody>
+    <light name="top_light" pos="0 0 3" dir="0 0 -1" diffuse="0.9 0.9 0.9"/>
+    <light name="side_light" pos="2 2 2" dir="-1 -1 -1" diffuse="0.5 0.5 0.5"/>
+
+    <geom name="floor" type="plane" size="2 2 0.05" material="grid_mat"/>
+
+    <body name="base" pos="0 0 0.05">
+      <geom name="base_geom" type="cylinder" size="0.08 0.05" rgba="0.3 0.3 0.35 1"/>
+
+      <body name="link1" pos="0 0 0.05">
+        <joint name="shoulder" type="hinge" axis="0 1 0" range="-1.57 1.57" damping="0.5"/>
+        <geom name="link1_geom" type="capsule" fromto="0 0 0 0 0 0.3" size="0.04"
+              rgba="0.2 0.5 0.8 1"/>
+
+        <body name="link2" pos="0 0 0.3">
+          <joint name="elbow" type="hinge" axis="0 1 0" range="-2.0 0.1" damping="0.3"/>
+          <geom name="link2_geom" type="capsule" fromto="0 0 0 0 0 0.25" size="0.035"
+                rgba="0.2 0.6 0.4 1"/>
+
+          <body name="link3" pos="0 0 0.25">
+            <joint name="wrist" type="hinge" axis="0 1 0" range="-1.57 1.57" damping="0.2"/>
+            <geom name="link3_geom" type="capsule" fromto="0 0 0 0 0 0.15" size="0.025"
+                  rgba="0.8 0.4 0.2 1"/>
+            <geom name="ee_marker" type="sphere" size="0.03" pos="0 0 0.15"
+                  rgba="0.9 0.1 0.1 1" contype="0" conaffinity="0"/>
+          </body>
+        </body>
+      </body>
+    </body>
+
+    <!-- A target object to interact with -->
+    <body name="box" pos="0.3 0 0.05">
+      <geom name="box_geom" type="box" size="0.04 0.04 0.04" rgba="0.9 0.8 0.1 1"
+            mass="0.2"/>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <motor name="shoulder_motor" joint="shoulder" ctrlrange="-5 5" ctrllimited="true"/>
+    <motor name="elbow_motor" joint="elbow" ctrlrange="-5 5" ctrllimited="true"/>
+    <motor name="wrist_motor" joint="wrist" ctrlrange="-3 3" ctrllimited="true"/>
+  </actuator>
+</mujoco>

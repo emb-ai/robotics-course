@@ -1,6 +1,10 @@
 # REPO_ROOT must be absolute repo path (set by container/run.sh or autograder).
 services:
   homework-tests:
+    # Distinct tag so week 02 (same default project name "container") does not reuse this image.
+    image: ai_in_robotics_01_intro_kinematics_hw_tests
+    environment:
+      GRADING_STUDENT_SUBMISSION: "0"
     build:
       context: ${REPO_ROOT}
       dockerfile: 01-intro-and-kinematics/homework/container/Dockerfile

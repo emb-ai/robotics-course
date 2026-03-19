@@ -6,7 +6,8 @@
       0.017708333333333333,
       -0.3468198708845212
     ],
-    "solvable": true
+    "solvable_analytical": true,
+    "solvable_numerical": true
   },
   {
     "pose": [
@@ -15,7 +16,8 @@
       0.078125,
       0.0
     ],
-    "solvable": false
+    "solvable_analytical": false,
+    "solvable_numerical": true
   },
   {
     "pose": [
@@ -24,7 +26,8 @@
       0.03854166666666667,
       -0.01910627379569685
     ],
-    "solvable": true
+    "solvable_analytical": true,
+    "solvable_numerical": true
   },
   {
     "pose": [
@@ -33,7 +36,8 @@
       0.071875,
       0.0
     ],
-    "solvable": false
+    "solvable_analytical": false,
+    "solvable_numerical": false
   },
   {
     "pose": [
@@ -42,7 +46,8 @@
       0.0010416666666666667,
       0.3199308551521158
     ],
-    "solvable": true
+    "solvable_analytical": true,
+    "solvable_numerical": true
   },
   {
     "pose": [
@@ -51,7 +56,8 @@
       0.07604166666666667,
       0.0
     ],
-    "solvable": false
+    "solvable_analytical": false,
+    "solvable_numerical": true
   },
   {
     "pose": [
@@ -60,7 +66,8 @@
       0.009375,
       0.19261817546402807
     ],
-    "solvable": true
+    "solvable_analytical": true,
+    "solvable_numerical": true
   },
   {
     "pose": [
@@ -69,7 +76,8 @@
       0.09270833333333334,
       0.0
     ],
-    "solvable": false
+    "solvable_analytical": false,
+    "solvable_numerical": false
   },
   {
     "pose": [
@@ -78,7 +86,8 @@
       0.059375,
       0.0
     ],
-    "solvable": false
+    "solvable_analytical": false,
+    "solvable_numerical": false
   },
   {
     "pose": [
@@ -87,7 +96,8 @@
       0.059375,
       0.5859980295789088
     ],
-    "solvable": true
+    "solvable_analytical": true,
+    "solvable_numerical": true
   },
   {
     "pose": [
@@ -96,7 +106,8 @@
       0.013541666666666667,
       0.08426376938361647
     ],
-    "solvable": true
+    "solvable_analytical": true,
+    "solvable_numerical": true
   },
   {
     "pose": [
@@ -105,7 +116,8 @@
       0.0010416666666666667,
       0.0
     ],
-    "solvable": false
+    "solvable_analytical": false,
+    "solvable_numerical": false
   },
   {
     "pose": [
@@ -114,7 +126,8 @@
       0.04479166666666666,
       0.4231819062573135
     ],
-    "solvable": true
+    "solvable_analytical": true,
+    "solvable_numerical": true
   },
   {
     "pose": [
@@ -123,7 +136,8 @@
       0.015625,
       0.0
     ],
-    "solvable": false
+    "solvable_analytical": false,
+    "solvable_numerical": false
   },
   {
     "pose": [
@@ -132,7 +146,8 @@
       0.04895833333333333,
       0.0
     ],
-    "solvable": false
+    "solvable_analytical": false,
+    "solvable_numerical": false
   },
   {
     "pose": [
@@ -141,7 +156,8 @@
       0.040624999999999994,
       0.0
     ],
-    "solvable": false
+    "solvable_analytical": false,
+    "solvable_numerical": false
   },
   {
     "pose": [
@@ -150,7 +166,8 @@
       0.03854166666666667,
       -0.13983324839274705
     ],
-    "solvable": true
+    "solvable_analytical": true,
+    "solvable_numerical": true
   },
   {
     "pose": [
@@ -159,7 +176,8 @@
       0.015625,
       -0.24416287769188438
     ],
-    "solvable": true
+    "solvable_analytical": true,
+    "solvable_numerical": true
   },
   {
     "pose": [
@@ -168,7 +186,8 @@
       0.042708333333333334,
       0.0
     ],
-    "solvable": false
+    "solvable_analytical": false,
+    "solvable_numerical": false
   },
   {
     "pose": [
@@ -177,6 +196,7 @@
       0.05520833333333333,
       -0.32171235613682
     ],
-    "solvable": true
+    "solvable_analytical": true,
+    "solvable_numerical": true
   }
 ]

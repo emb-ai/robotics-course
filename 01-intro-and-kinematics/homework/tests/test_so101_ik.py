@@ -1,5 +1,7 @@
 """
-SO101 downturned IK tests. Open tests: position error < NUM_POS_TOL (1e-3), orientation < NUM_ORIENT_TOL (5e-2).
+SO101 downturned IK tests.
+Open numerical: FK vs target < NUM_POS_TOL (1e-3), yaw < NUM_ORIENT_TOL (5e-2).
+Open analytical: same checks with relaxed ANA_* (diagram model vs URDF FK).
 Hidden tests: joint-space distance to reference < NUM_Q_TOL (2e-2).
 """
 import importlib
@@ -12,8 +14,8 @@ import torch
 import pytorch_kinematics as pk
 from pytorch_kinematics.transforms import rotation_conversions
 
-from solutions.so101_ik import numerical_ik_so101_downturned as numerical_solution
 from solutions.so101_ik import analytical_ik_so101_downturned as analytical_solution
+from solutions.so101_ik import numerical_ik_so101_downturned as numerical_solution
 from solutions.so101_ik import so101_downturned_ik_symbolic as analytical_solution_formulas
 
 
@@ -24,9 +26,9 @@ URDF_PATH = _hw / "assets" / "so101" / "robot.urdf"
 NUM_POS_TOL = 1e-3
 NUM_ORIENT_TOL = 5e-2
 NUM_Q_TOL = 2e-2
-ANA_POS_TOL = 2e-2
-ANA_ORIENT_TOL = 5e-2
-ANA_NUM_TOL = 1e-3
+# Closed-form uses the teaching diagram; FK on the calibrated URDF is typically ~1–1.5 cm off.
+ANA_POS_TOL = 1.7e-2
+ANA_ORIENT_TOL = 8e-2
 
 SO101_JOINT_NAMES = (
     "shoulder_pan",
@@ -64,11 +66,20 @@ def _yaw_difference(yaw_a: float, yaw_b: float) -> float:
     cos_diff = np.cos(yaw_a) * np.cos(yaw_b) + np.sin(yaw_a) * np.sin(yaw_b)
     return float(np.arccos(np.clip(cos_diff, -1.0, 1.0)))
 
+
+def _open_case_flags(case: dict) -> tuple[bool, bool]:
+    """Open JSON uses solvable_analytical / solvable_numerical (legacy: solvable == analytical)."""
+    if "solvable_analytical" in case:
+        return bool(case["solvable_analytical"]), bool(case["solvable_numerical"])
+    s = bool(case["solvable"])
+    return s, s
+
+
 @pytest.mark.parametrize(
-    "pose, solvable", 
-    [(case["pose"], case["solvable"]) for case in OPEN_CASES]
+    "pose, solvable_numerical",
+    [(case["pose"], _open_case_flags(case)[1]) for case in OPEN_CASES],
 )
-def test_numerical_ik_fk_consistency(pose: np.ndarray, solvable: bool) -> None:
+def test_numerical_ik_fk_consistency(pose: np.ndarray, solvable_numerical: bool) -> None:
     """
     Note that this test only partially tests the correctness of the numerical IK solution.
     It does so by comparing the forward kinematics of the numerical IK solution to the target pose.
@@ -77,10 +88,13 @@ def test_numerical_ik_fk_consistency(pose: np.ndarray, solvable: bool) -> None:
     serial_chain = pk.SerialChain(chain, "gripper_frame_link", "base_link")
     x, y, z, yaw = pose
     q = numerical_solution(x, y, z, yaw)
-    if solvable:
-        assert q is not None, f"Numerical IK returned None for pose solvable within {NUM_POS_TOL} xyz absolute error and {NUM_ORIENT_TOL} orientation absolute error"
+    if solvable_numerical:
+        assert q is not None, (
+            f"Numerical IK returned None for pose marked solvable_numerical=True "
+            f"(tol {NUM_POS_TOL} m pos, {NUM_ORIENT_TOL} rad yaw)"
+        )
     else:
-        assert q is None, f"Numerical IK returned solution for unsolvable pose"
+        assert q is None, "Numerical IK returned a solution for pose marked solvable_numerical=False"
         return
     q_arr = np.array([q[name] for name in SO101_JOINT_NAMES])
     position, R_actual = forward_kinematics_unpacked(serial_chain, q_arr)
@@ -90,22 +104,19 @@ def test_numerical_ik_fk_consistency(pose: np.ndarray, solvable: bool) -> None:
 
 
 @pytest.mark.parametrize(
-    "pose, solvable",
-    [(case["pose"], case["solvable"]) for case in OPEN_CASES]
+    "pose, solvable_analytical",
+    [(case["pose"], _open_case_flags(case)[0]) for case in OPEN_CASES],
 )
-def test_analytical_ik_fk_consistency(pose: np.ndarray, solvable: bool) -> None:
-    """
-    Note that this test only partially tests the correctness of the analytical IK solution.
-    It does so by comparing the forward kinematics of the analytical IK solution to the target pose.
-    """
+def test_analytical_ik_fk_consistency(pose: np.ndarray, solvable_analytical: bool) -> None:
+    """Analytical IK must return None iff the pose is not diagram-solvable within URDF joint limits."""
     chain = pk.build_chain_from_urdf(open(URDF_PATH, "rb").read())
     serial_chain = pk.SerialChain(chain, "gripper_frame_link", "base_link")
     x, y, z, yaw = pose
     q = analytical_solution(x, y, z, yaw)
-    if solvable:
-        assert q is not None, f"Analytical IK returned None for pose solvable within {ANA_POS_TOL} xyz absolute error and {ANA_ORIENT_TOL} orientation absolute error"
+    if solvable_analytical:
+        assert q is not None, "Analytical IK returned None for pose marked solvable_analytical=True"
     else:
-        assert q is None, f"Analytical IK returned solution for unsolvable pose"
+        assert q is None, "Analytical IK returned a solution for pose marked solvable_analytical=False"
         return
     q_arr = np.array([q[name] for name in SO101_JOINT_NAMES])
     position, R_actual = forward_kinematics_unpacked(serial_chain, q_arr)
@@ -115,28 +126,32 @@ def test_analytical_ik_fk_consistency(pose: np.ndarray, solvable: bool) -> None:
 
 
 @pytest.mark.parametrize(
-    "pose",
-    [(case["pose"]) for case in OPEN_CASES]
+    "pose, solvable_analytical, solvable_numerical",
+    [(c["pose"], *_open_case_flags(c)) for c in OPEN_CASES],
 )
-def test_analytical_vs_numerical(pose) -> None:
-    """
-    Both IK solutions should achieve the same pose (position and orientation).
-    Compares FK of each solution; allows different joint configurations (multiple IK solutions).
-    """
-    chain = pk.build_chain_from_urdf(open(URDF_PATH, "rb").read())
-    serial_chain = pk.SerialChain(chain, "gripper_frame_link", "base_link")
+def test_analytical_vs_numerical_open(
+    pose: np.ndarray,
+    solvable_analytical: bool,
+    solvable_numerical: bool,
+) -> None:
+    """Consistency of None vs solution flags; when both succeed, numerical hits target and analytical is near it."""
     x, y, z, yaw = pose
+    target = np.array([x, y, z], dtype=np.float64)
     q_ana = analytical_solution(x, y, z, yaw)
     q_num = numerical_solution(x, y, z, yaw)
-    which = "analytical" if q_ana is None else "numerical"
-    assert (q_ana is not None) == (q_num is not None), f"One {which} IK solution returned None for pose={pose}"
-    if q_ana is not None and q_num is not None:
-        pos_ana, R_ana = forward_kinematics_unpacked(serial_chain, np.array([q_ana[name] for name in SO101_JOINT_NAMES]))
-        pos_num, R_num = forward_kinematics_unpacked(serial_chain, np.array([q_num[name] for name in SO101_JOINT_NAMES]))
-        yaw_ana = _yaw_from_rotation_matrix(R_ana)
-        yaw_num = _yaw_from_rotation_matrix(R_num)
-        assert np.linalg.norm(pos_ana - pos_num) < ANA_POS_TOL, f"Analytical vs numerical position mismatch for pose={pose}"
-        assert _yaw_difference(yaw_ana, yaw_num) < ANA_ORIENT_TOL, f"Analytical vs numerical yaw mismatch for pose={pose}"
+    assert (q_ana is not None) == solvable_analytical
+    assert (q_num is not None) == solvable_numerical
+    if not (solvable_analytical and solvable_numerical):
+        return
+    chain = pk.build_chain_from_urdf(open(URDF_PATH, "rb").read())
+    serial_chain = pk.SerialChain(chain, "gripper_frame_link", "base_link")
+    pa, Ra = forward_kinematics_unpacked(serial_chain, np.array([q_ana[n] for n in SO101_JOINT_NAMES]))
+    pn, Rn = forward_kinematics_unpacked(serial_chain, np.array([q_num[n] for n in SO101_JOINT_NAMES]))
+    assert np.linalg.norm(pn - target) < NUM_POS_TOL
+    assert _yaw_difference(_yaw_from_rotation_matrix(Rn), yaw) < NUM_ORIENT_TOL
+    assert np.linalg.norm(pa - target) < ANA_POS_TOL
+    assert _yaw_difference(_yaw_from_rotation_matrix(Ra), yaw) < ANA_ORIENT_TOL
+    assert np.linalg.norm(pa - pn) < ANA_POS_TOL + NUM_POS_TOL
 
 
 @pytest.mark.skipif(HIDDEN_CASES is None, reason="Hidden tests are not available")
