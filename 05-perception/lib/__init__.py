@@ -38,7 +38,7 @@ from lib.live import (
 )
 from lib.servo import FeetechServoSource, SimulatedServoSource, make_servo_source
 from lib.phone_stream import (
-    PhoneReplaySource, PhoneWebSocketSource,
+    PhoneReplaySource, PhoneUSBSource, PhoneWebSocketSource,
     load_imu_csv, load_depth_ply, load_camera_frames, get_sample_data,
 )
 from lib.ws_server import PerceptionWSServer
