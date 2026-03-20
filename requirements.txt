@@ -11,3 +11,5 @@ scipy
 sympy
 torch
 trimesh
+opencv-python
+lerobot[feetech]

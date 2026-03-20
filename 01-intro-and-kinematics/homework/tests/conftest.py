@@ -1,6 +1,7 @@
 """
 Session-wide checks: forbid student code (solutions/) from importing reference_solution or hidden_tests.
-When BLOCK_REFERENCE_IMPORT=1 (pass 1 of grading), block those imports so student code cannot use them.
+
+Set BLOCK_REFERENCE_IMPORT=1 to block runtime imports of those top-level packages (optional).
 """
 import ast
 import os

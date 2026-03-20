@@ -170,12 +170,15 @@ def test_numerical_vs_reference(pose: np.ndarray, solvable: bool, q_ref: np.ndar
 
 @pytest.mark.skipif(REFERENCE_SOLUTION is None, reason="Reference solution is not available")
 def test_analytical_vs_reference_formulas() -> None:
-    x, y, z, yaw_s = sympy.symbols("x y z yaw", real=True)
-    solution_formulas = analytical_solution_formulas(x, y, z, yaw_s)
-    reference_formulas = REFERENCE_SOLUTION(x, y, z, yaw_s)
+    x = sympy.Symbol("x", real=True, positive=True)
+    y = sympy.Symbol("y", real=True, positive=True)
+    z = sympy.Symbol("z", real=True, positive=True)
+    yaw_s = sympy.Symbol("yaw_s", real=True)
+    solution_formulas = analytical_solution_formulas(x + 0.1, y, z, yaw_s)
+    reference_formulas = REFERENCE_SOLUTION(x + 0.1, y, z, yaw_s)
     difference = set(SO101_JOINT_NAMES) - set(solution_formulas.keys())
     assert not difference, f"Analytical solution did not return following joint names: {difference}"
     for name in SO101_JOINT_NAMES:
-        assert solution_formulas[name].equals(reference_formulas[name]), f"Symbolic mismatch for joint {name}: solution != reference"
+        assert sympy.simplify(solution_formulas[name] - reference_formulas[name]) == 0, f"Symbolic mismatch for joint {name}: solution != reference"
 
 

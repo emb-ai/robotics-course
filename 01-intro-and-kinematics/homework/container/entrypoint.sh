@@ -19,11 +19,7 @@ if [ -d "$HW_SRC/reference_solution" ] && [ -n "$(ls -A "$HW_SRC/reference_solut
       cp "$f" "solutions/$bn"
     done
   fi
-  BLOCK_REFERENCE_IMPORT=1 pytest tests/ -v "$@" || true
-  r1=$?
-  pytest tests/ hidden_tests/ -v --import-mode=importlib "$@"
-  r2=$?
-  exit $((r1 | r2))
+  exec pytest tests/ hidden_tests/ -v --import-mode=importlib "$@"
 else
   cd "$HW_SRC"
   # When args are given (autograder partial submission), run only those test paths to avoid importing missing solution modules

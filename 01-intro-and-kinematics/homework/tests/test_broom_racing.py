@@ -25,17 +25,30 @@ from solutions.broom_racing import gate_pass, catch_snitch, catch_ball_and_gate
 
 OPEN_CASES = json.load(open(_hw / "tests" / "broom_racing_open_test_cases.json", "r"))
 
+GATE_PASS_REF = CATCH_SNITCH_REF = CATCH_BALL_AND_GATE_REF = None
+REF_AVAILABLE = False
 try:
     _ref_mod = importlib.import_module("reference_solution.broom_racing")
     GATE_PASS_REF = getattr(_ref_mod, "gate_pass_ref", None)
     CATCH_SNITCH_REF = getattr(_ref_mod, "catch_snitch_ref", None)
     CATCH_BALL_AND_GATE_REF = getattr(_ref_mod, "catch_ball_and_gate_ref", None)
-    REF_AVAILABLE = GATE_PASS_REF is not None and CATCH_SNITCH_REF is not None and CATCH_BALL_AND_GATE_REF is not None
-    HIDDEN_CASES = getattr(importlib.import_module("hidden_tests.test_broom_racing"), "HIDDEN_CASES", None)
+    REF_AVAILABLE = (
+        GATE_PASS_REF is not None
+        and CATCH_SNITCH_REF is not None
+        and CATCH_BALL_AND_GATE_REF is not None
+    )
 except Exception:
-    GATE_PASS_REF = CATCH_SNITCH_REF = CATCH_BALL_AND_GATE_REF = None
-    REF_AVAILABLE = False
-    HIDDEN_CASES = None
+    pass
+
+HIDDEN_CASES = None
+try:
+    HIDDEN_CASES = getattr(
+        importlib.import_module("hidden_tests.test_broom_racing"),
+        "HIDDEN_CASES",
+        None,
+    )
+except Exception:
+    pass
 
 RTOL = 1e-3
 LENGTH_MARGIN = 1e-3

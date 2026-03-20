@@ -70,10 +70,10 @@ def analytical_ik_so101_downturned(
     serial_chain = pk.SerialChain(chain, "gripper_frame_link", "base_link")
     low, high = serial_chain.get_joint_limits()
     low, high = np.asarray(low), np.asarray(high)
-    for joint in chain.get_joints():
+    for idx, joint in enumerate(q.keys()):
         joint_name = joint.name
         joint_angle = q[joint_name]
-        if joint_angle < low[joint_name] or joint_angle > high[joint_name]:
+        if joint_angle < low[idx] or joint_angle > high[idx]:
             return None
     return q
 
