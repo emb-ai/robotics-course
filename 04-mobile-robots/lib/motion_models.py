@@ -15,10 +15,10 @@ class VelocityMotionModel:
         alpha_1, alpha_2 : noise in angular velocity (omega)
         alpha_3, alpha_4 : noise in linear velocity (v)
     """
-    alpha_1: float = 0.05   # v noise from v
-    alpha_2: float = 0.01   # v noise from omega
-    alpha_3: float = 0.01   # omega noise from v
-    alpha_4: float = 0.05   # omega noise from omega
+    alpha_1: float = 0.1   # v noise from v
+    alpha_2: float = 0.02   # v noise from omega
+    alpha_3: float = 0.02   # omega noise from v
+    alpha_4: float = 0.1   # omega noise from omega
 
     def sample(
         self,

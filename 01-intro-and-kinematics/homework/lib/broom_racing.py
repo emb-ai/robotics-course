@@ -76,6 +76,100 @@ def _sample_curve(
     )
 
 
+def check_eom(
+    curve_fn: Callable[[np.ndarray], Configuration],
+    n_points: int = 500,
+    tol: float = 0.05,
+) -> tuple[bool, list[str]]:
+    xs, ys, zs, thetas, phis = _sample_curve(curve_fn, n_points)
+    L = curve_length(curve_fn, n_points)
+    ds = L / (n_points - 1)
+    errors: list[str] = []
+    if ds < 1e-12:
+        return True, errors
+    dx = np.diff(xs) / ds
+    dy = np.diff(ys) / ds
+    dz = np.diff(zs) / ds
+    ct = np.cos(thetas[:-1])
+    st = np.sin(thetas[:-1])
+    cp = np.cos(phis[:-1])
+    sp = np.sin(phis[:-1])
+    res_x = np.abs(dx - V * ct * cp)
+    res_y = np.abs(dy - V * st * cp)
+    res_z = np.abs(dz - V * sp)
+    if np.max(res_x) > tol:
+        errors.append(f"EOM x residual max={np.max(res_x):.4f} > {tol}")
+    if np.max(res_y) > tol:
+        errors.append(f"EOM y residual max={np.max(res_y):.4f} > {tol}")
+    if np.max(res_z) > tol:
+        errors.append(f"EOM z residual max={np.max(res_z):.4f} > {tol}")
+    return len(errors) == 0, errors
+
+
+def check_constraints(
+    curve_fn: Callable[[np.ndarray], Configuration],
+    n_points: int = 500,
+    kappa_max: float = KAPPA_MAX,
+    phi_min: float = PHI_MIN,
+    phi_max: float = PHI_MAX,
+    tol: float = 1e-3,
+) -> tuple[bool, list[str]]:
+    xs, ys, zs, thetas, phis = _sample_curve(curve_fn, n_points)
+    L = curve_length(curve_fn, n_points)
+    ds = L / (n_points - 1)
+    errors: list[str] = []
+    phi_lo = np.min(phis)
+    phi_hi = np.max(phis)
+    if phi_lo < phi_min - tol:
+        errors.append(f"Pitch below limit: min(phi)={phi_lo:.4f} < {phi_min:.4f}")
+    if phi_hi > phi_max + tol:
+        errors.append(f"Pitch above limit: max(phi)={phi_hi:.4f} > {phi_max:.4f}")
+    if ds > 1e-12:
+        dtheta = np.diff(np.unwrap(thetas)) / ds
+        dphi = np.diff(np.unwrap(phis)) / ds
+        cp = np.cos(phis[:-1])
+        u1 = dtheta * cp
+        u2 = dphi
+        kappa = np.sqrt(u1**2 + u2**2)
+        if np.max(kappa) > kappa_max + tol:
+            errors.append(f"Curvature exceeded: max(kappa)={np.max(kappa):.4f} > {kappa_max}")
+        speed = np.sqrt(np.diff(xs) ** 2 + np.diff(ys) ** 2 + np.diff(zs) ** 2) / ds
+        if np.max(np.abs(speed - V)) > 0.1:
+            errors.append(f"Speed deviation from v={V}: max|v-1|={np.max(np.abs(speed - V)):.4f}")
+    return len(errors) == 0, errors
+
+
+def check_endpoints(
+    curve_fn: Callable[[np.ndarray], Configuration],
+    start: Configuration,
+    goal: Configuration | None = None,
+    goal_xyz: XYZConfiguration | None = None,
+    pos_tol: float = 0.02,
+    angle_tol: float = 0.05,
+) -> tuple[bool, list[str]]:
+    errors: list[str] = []
+    c0 = curve_fn(np.atleast_1d(0.0))
+    c1 = curve_fn(np.atleast_1d(1.0))
+    d_start = np.linalg.norm(np.array([c0.x - start.x, c0.y - start.y, c0.z - start.z]))
+    if d_start > pos_tol:
+        errors.append(f"Start position error: {d_start:.4f}")
+    d_ang0 = heading_angular_error_rad(c0.theta, c0.phi, start.theta, start.phi)
+    if d_ang0 > angle_tol:
+        errors.append(f"Start heading error: angle={d_ang0:.4f} rad > {angle_tol}")
+    if goal is not None:
+        d_goal = np.linalg.norm(np.array([c1.x - goal.x, c1.y - goal.y, c1.z - goal.z]))
+        if d_goal > pos_tol:
+            errors.append(f"Goal position error: {d_goal:.4f}")
+        d_ang1 = heading_angular_error_rad(c1.theta, c1.phi, goal.theta, goal.phi)
+        if d_ang1 > angle_tol:
+            errors.append(f"Goal heading error: angle={d_ang1:.4f} rad > {angle_tol}")
+    elif goal_xyz is not None:
+        d_goal = np.linalg.norm(np.array([c1.x - goal_xyz.x, c1.y - goal_xyz.y, c1.z - goal_xyz.z]))
+        if d_goal > pos_tol:
+            errors.append(f"Goal XYZ error: {d_goal:.4f}")
+    return len(errors) == 0, errors
+
+
 def check_all(
     curve_fn: Callable[[np.ndarray], Configuration],
     start: Configuration,
@@ -88,64 +182,14 @@ def check_all(
     angle_tol: float = 0.05,
 ) -> tuple[bool, list[str]]:
     all_errors: list[str] = []
-    xs, ys, zs, thetas, phis = _sample_curve(curve_fn, n_points)
-    L = curve_length(curve_fn, n_points)
-    ds = L / (n_points - 1)
-
-    if ds >= 1e-12:
-        dx = np.diff(xs) / ds
-        dy = np.diff(ys) / ds
-        dz = np.diff(zs) / ds
-        ct = np.cos(thetas[:-1])
-        st = np.sin(thetas[:-1])
-        cp = np.cos(phis[:-1])
-        sp = np.sin(phis[:-1])
-        res_x = np.abs(dx - V * ct * cp)
-        res_y = np.abs(dy - V * st * cp)
-        res_z = np.abs(dz - V * sp)
-        if np.max(res_x) > eom_tol:
-            all_errors.append(f"EOM x residual max={np.max(res_x):.4f} > {eom_tol}")
-        if np.max(res_y) > eom_tol:
-            all_errors.append(f"EOM y residual max={np.max(res_y):.4f} > {eom_tol}")
-        if np.max(res_z) > eom_tol:
-            all_errors.append(f"EOM z residual max={np.max(res_z):.4f} > {eom_tol}")
-
-        phi_lo, phi_hi = np.min(phis), np.max(phis)
-        if phi_lo < PHI_MIN - constraint_tol:
-            all_errors.append(f"Pitch below limit: min(phi)={phi_lo:.4f} < {PHI_MIN:.4f}")
-        if phi_hi > PHI_MAX + constraint_tol:
-            all_errors.append(f"Pitch above limit: max(phi)={phi_hi:.4f} > {PHI_MAX:.4f}")
-        dtheta = np.diff(thetas) / ds
-        dphi = np.diff(phis) / ds
-        u1 = dtheta * cp
-        u2 = dphi
-        kappa = np.sqrt(u1**2 + u2**2)
-        if np.max(kappa) > KAPPA_MAX + constraint_tol:
-            all_errors.append(f"Curvature exceeded: max(kappa)={np.max(kappa):.4f} > {KAPPA_MAX}")
-        speed = np.sqrt(np.diff(xs)**2 + np.diff(ys)**2 + np.diff(zs)**2) / ds
-        if np.max(np.abs(speed - V)) > 0.1:
-            all_errors.append(f"Speed deviation from v={V}: max|v-1|={np.max(np.abs(speed - V)):.4f}")
-
-    c0 = curve_fn(np.atleast_1d(0.0))
-    c1 = curve_fn(np.atleast_1d(1.0))
-    d_start = np.linalg.norm(np.array([c0.x - start.x, c0.y - start.y, c0.z - start.z]))
-    if d_start > pos_tol:
-        all_errors.append(f"Start position error: {d_start:.4f}")
-    d_ang0 = heading_angular_error_rad(c0.theta, c0.phi, start.theta, start.phi)
-    if d_ang0 > angle_tol:
-        all_errors.append(f"Start heading error: angle={d_ang0:.4f} rad > {angle_tol}")
-    if goal is not None:
-        d_goal = np.linalg.norm(np.array([c1.x - goal.x, c1.y - goal.y, c1.z - goal.z]))
-        if d_goal > pos_tol:
-            all_errors.append(f"Goal position error: {d_goal:.4f}")
-        d_ang1 = heading_angular_error_rad(c1.theta, c1.phi, goal.theta, goal.phi)
-        if d_ang1 > angle_tol:
-            all_errors.append(f"Goal heading error: angle={d_ang1:.4f} rad > {angle_tol}")
-    elif goal_xyz is not None:
-        d_goal = np.linalg.norm(np.array([c1.x - goal_xyz.x, c1.y - goal_xyz.y, c1.z - goal_xyz.z]))
-        if d_goal > pos_tol:
-            all_errors.append(f"Goal XYZ error: {d_goal:.4f}")
-
+    ok_e, err_e = check_eom(curve_fn, n_points, eom_tol)
+    all_errors.extend(err_e)
+    ok_c, err_c = check_constraints(
+        curve_fn, n_points, KAPPA_MAX, PHI_MIN, PHI_MAX, constraint_tol
+    )
+    all_errors.extend(err_c)
+    ok_p, err_p = check_endpoints(curve_fn, start, goal, goal_xyz, pos_tol, angle_tol)
+    all_errors.extend(err_p)
     return len(all_errors) == 0, all_errors
 
 

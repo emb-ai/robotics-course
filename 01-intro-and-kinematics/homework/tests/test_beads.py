@@ -8,12 +8,10 @@ _hw = Path(__file__).resolve().parent.parent
 
 
 from solutions.beads import optimal_bead_config
-from lib.beads import build_necklace
+from lib.beads import BEAD_MIN_NONADJACENT_CENTER_DIST, bead_configuration_violations, build_necklace
 
 
 TOL = 1e-5
-COLLISION_MARGIN = 2.0 - 1e-4
-JOINT_LIMIT_RADIUS = np.pi / 3
 
 OPEN_CASES = [
     np.array([2.0, 2.0, 2.0]),
@@ -35,28 +33,25 @@ except Exception:
 @pytest.mark.parametrize("link_lengths", OPEN_CASES)
 def test_joint_limits_and_collisions(link_lengths: np.ndarray) -> None:
     angles = optimal_bead_config(link_lengths)
-    vertices = build_necklace(link_lengths, angles)
-    n_joints = len(link_lengths) - 1
-    assert angles.shape == (n_joints, 2), f"Expected shape {(n_joints, 2)}, got {angles.shape}"
-
-    cos_limit = np.cos(JOINT_LIMIT_RADIUS + TOL)
-    for i in range(n_joints):
-        ax, ay = angles[i, 0], angles[i, 1]
-        cos_angle = np.cos(ax) * np.cos(ay)
-        assert cos_angle >= cos_limit, (
-            f"Joint {i} violates spherical cap: cos(θ)={cos_angle:.4f} < cos(limit)={cos_limit:.4f}"
-        )
-
-    n_points = len(vertices)
-    for i in range(n_points):
-        for j in range(i + 2, n_points):
-            d = float(np.linalg.norm(vertices[i] - vertices[j]))
-            assert d >= COLLISION_MARGIN, f"Sphere pair ({i},{j}) collides, distance {d:.4f} < {COLLISION_MARGIN}"
+    violations = bead_configuration_violations(
+        link_lengths,
+        angles,
+        tol=TOL,
+        min_center_dist=BEAD_MIN_NONADJACENT_CENTER_DIST,
+    )
+    assert not violations, "; ".join(violations)
 
 @pytest.mark.skipif(REFERENCE_SOLUTION is None, reason="Reference solution is not available")
 @pytest.mark.parametrize("link_lengths", OPEN_CASES + (HIDDEN_CASES or []))
 def test_improvement_over_reference(link_lengths: np.ndarray) -> None:
     solution_angles = optimal_bead_config(link_lengths)
+    violations = bead_configuration_violations(
+        link_lengths,
+        solution_angles,
+        tol=TOL,
+        min_center_dist=BEAD_MIN_NONADJACENT_CENTER_DIST,
+    )
+    assert not violations, "Improvement test requires a feasible config: " + "; ".join(violations)
     solution_vertices = build_necklace(link_lengths, solution_angles)
     solution_radius = np.linalg.norm(solution_vertices - solution_vertices.mean(axis=0), axis=1).max()
     reference_angles = REFERENCE_SOLUTION(link_lengths)

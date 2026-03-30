@@ -8,6 +8,46 @@ from scipy.spatial.transform import Rotation as R
 from IPython.display import HTML, display
 
 JOINT_LIMIT_RADIUS = np.pi / 3
+BEAD_SPHERE_RADIUS = 1.0
+# Non-adjacent bead centers must be at least this far apart (touching spheres of radius BEAD_SPHERE_RADIUS).
+BEAD_MIN_NONADJACENT_CENTER_DIST = 2.0 * BEAD_SPHERE_RADIUS - 1e-4
+
+
+def bead_configuration_violations(
+    link_lengths: np.ndarray,
+    angles: np.ndarray,
+    *,
+    tol: float = 1e-5,
+    min_center_dist: float = BEAD_MIN_NONADJACENT_CENTER_DIST,
+) -> list[str]:
+    """Return human-readable violation messages; empty list means constraints satisfied."""
+    link_lengths = np.asarray(link_lengths, dtype=np.float64)
+    angles = np.asarray(angles, dtype=np.float64)
+    n_joints = len(link_lengths) - 1
+    if angles.shape != (n_joints, 2):
+        return [
+            f"angles shape {angles.shape} != expected ({n_joints}, 2) for {len(link_lengths)} links"
+        ]
+
+    cos_limit = np.cos(JOINT_LIMIT_RADIUS + tol)
+    for i in range(n_joints):
+        ax, ay = float(angles[i, 0]), float(angles[i, 1])
+        cos_angle = np.cos(ax) * np.cos(ay)
+        if cos_angle < cos_limit:
+            return [
+                f"Joint {i} violates spherical cap: cos(θ)={cos_angle:.6f} < cos(limit)={cos_limit:.6f}"
+            ]
+
+    vertices = build_necklace(link_lengths, angles)
+    n_points = len(vertices)
+    for i in range(n_points):
+        for j in range(i + 2, n_points):
+            d = float(np.linalg.norm(vertices[i] - vertices[j]))
+            if d < min_center_dist:
+                return [
+                    f"Sphere pair ({i},{j}) collides: distance {d:.6f} < {min_center_dist:.6f}"
+                ]
+    return []
 
 
 def build_necklace(
@@ -34,7 +74,7 @@ def _beads_viewer_data(
     vertices = build_necklace(link_lengths, angles)
     return {
         "endpoints": vertices.tolist(),
-        "bead_radius": 1.0,
+        "bead_radius": BEAD_SPHERE_RADIUS,
     }
 
 

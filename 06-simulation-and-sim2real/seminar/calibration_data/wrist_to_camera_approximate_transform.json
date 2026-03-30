@@ -1,0 +1,19 @@
+{
+  "source_object": "wrist_link",
+  "target_object": "camera",
+  "translation_xyz": {
+    "x": "0.0010",
+    "y": "-0.0570",
+    "z": "-0.0529"
+  },
+  "rpy_rad_xyz": {
+    "roll": "1.6155",
+    "pitch": "-0.4340",
+    "yaw": "-1.5896"
+  },
+  "rpy_deg_xyz": {
+    "roll": "92.5599",
+    "pitch": "-24.8649",
+    "yaw": "-91.0767"
+  }
+}
