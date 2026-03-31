@@ -67,21 +67,147 @@ function ballSocketSegment(p0, p1, radius) {
   return group;
 }
 
-function boundingSphereWireframe(pts) {
-  const n = pts.length;
-  const cx = pts.reduce((s, p) => s + p[0], 0) / n;
-  const cy = pts.reduce((s, p) => s + p[1], 0) / n;
-  const cz = pts.reduce((s, p) => s + p[2], 0) / n;
-  let r = 0;
-  for (const p of pts) {
-    const d = Math.hypot(p[0] - cx, p[1] - cy, p[2] - cz);
-    if (d > r) r = d;
+function dist(a, b) {
+  return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+}
+
+function cross(a, b) {
+  return [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0],
+  ];
+}
+
+function dot(a, b) {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+
+function sub(a, b) {
+  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+}
+
+function add(a, b) {
+  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+}
+
+function mul(a, s) {
+  return [a[0] * s, a[1] * s, a[2] * s];
+}
+
+function solve3x3(A, b) {
+  const m = [
+    [A[0][0], A[0][1], A[0][2], b[0]],
+    [A[1][0], A[1][1], A[1][2], b[1]],
+    [A[2][0], A[2][1], A[2][2], b[2]],
+  ];
+  for (let col = 0; col < 3; col++) {
+    let piv = col;
+    for (let r = col + 1; r < 3; r++) {
+      if (Math.abs(m[r][col]) > Math.abs(m[piv][col])) piv = r;
+    }
+    if (Math.abs(m[piv][col]) < 1e-12) return null;
+    if (piv !== col) [m[piv], m[col]] = [m[col], m[piv]];
+    const d = m[col][col];
+    for (let j = col; j < 4; j++) m[col][j] /= d;
+    for (let r = 0; r < 3; r++) {
+      if (r === col) continue;
+      const f = m[r][col];
+      for (let j = col; j < 4; j++) m[r][j] -= f * m[col][j];
+    }
   }
-  r = Math.max(r, 1e-6);
+  return [m[0][3], m[1][3], m[2][3]];
+}
+
+function sphereFromBoundary(boundary) {
+  if (boundary.length === 0) return { c: [0, 0, 0], r: 0 };
+  if (boundary.length === 1) return { c: [...boundary[0]], r: 0 };
+  if (boundary.length === 2) {
+    const c = mul(add(boundary[0], boundary[1]), 0.5);
+    return { c, r: dist(boundary[0], c) };
+  }
+  if (boundary.length === 3) {
+    const a = boundary[0], b = boundary[1], c0 = boundary[2];
+    const ab = sub(b, a);
+    const ac = sub(c0, a);
+    const n = cross(ab, ac);
+    const n2 = dot(n, n);
+    if (n2 < 1e-12) {
+      // Collinear: sphere is from farthest pair.
+      const pairs = [[a, b], [a, c0], [b, c0]];
+      let best = { c: [0, 0, 0], r: Infinity };
+      for (const [p, q] of pairs) {
+        const cc = mul(add(p, q), 0.5);
+        const rr = dist(p, cc);
+        if (rr < best.r) best = { c: cc, r: rr };
+      }
+      return best;
+    }
+    const term1 = mul(cross(n, ab), dot(ac, ac));
+    const term2 = mul(cross(ac, n), dot(ab, ab));
+    const center = add(a, mul(add(term1, term2), 1.0 / (2.0 * n2)));
+    return { c: center, r: dist(a, center) };
+  }
+  // 4 points
+  const p0 = boundary[0];
+  const A = [];
+  const rhs = [];
+  for (let i = 1; i < 4; i++) {
+    const pi = boundary[i];
+    A.push([2 * (pi[0] - p0[0]), 2 * (pi[1] - p0[1]), 2 * (pi[2] - p0[2])]);
+    rhs.push(dot(pi, pi) - dot(p0, p0));
+  }
+  const center = solve3x3(A, rhs);
+  if (center == null) {
+    // Degenerate 4-point set: best sphere is defined by a 3-point subset.
+    let best = { c: [0, 0, 0], r: Infinity };
+    for (let i = 0; i < 4; i++) {
+      const tri = boundary.filter((_, k) => k !== i);
+      const s = sphereFromBoundary(tri);
+      if (s.r < best.r) best = s;
+    }
+    return best;
+  }
+  return { c: center, r: dist(p0, center) };
+}
+
+// Randomized incremental Welzl — O(n) expected time.
+function minimumEnclosingSphere(pts) {
+  if (pts.length === 0) return { c: [0, 0, 0], r: 0 };
+  // Fisher-Yates shuffle for random permutation.
+  const p = [...pts];
+  for (let i = p.length - 1; i > 0; i--) {
+    const j = (Math.random() * (i + 1)) | 0;
+    [p[i], p[j]] = [p[j], p[i]];
+  }
+  const eps = 1e-10;
+  let sph = sphereFromBoundary([p[0]]);
+  for (let i = 1; i < p.length; i++) {
+    if (dist(p[i], sph.c) <= sph.r + eps) continue;
+    sph = sphereFromBoundary([p[i]]);
+    for (let j = 0; j < i; j++) {
+      if (dist(p[j], sph.c) <= sph.r + eps) continue;
+      sph = sphereFromBoundary([p[i], p[j]]);
+      for (let k = 0; k < j; k++) {
+        if (dist(p[k], sph.c) <= sph.r + eps) continue;
+        sph = sphereFromBoundary([p[i], p[j], p[k]]);
+        for (let l = 0; l < k; l++) {
+          if (dist(p[l], sph.c) <= sph.r + eps) continue;
+          sph = sphereFromBoundary([p[i], p[j], p[k], p[l]]);
+        }
+      }
+    }
+  }
+  return sph;
+}
+
+function boundingSphereWireframe(pts) {
+  const sph = minimumEnclosingSphere(pts);
+  const r = Math.max(sph.r, 1e-6);
   const sphere = new THREE.SphereGeometry(r + 1.0, 24, 16);
   const edges = new THREE.EdgesGeometry(sphere);
   const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x808080 }));
-  line.position.set(cx, cy, cz);
+  line.position.set(sph.c[0], sph.c[1], sph.c[2]);
   return line;
 }
 
