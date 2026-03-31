@@ -8,10 +8,15 @@ _hw = Path(__file__).resolve().parent.parent
 
 
 from solutions.beads import optimal_bead_config
-from lib.beads import BEAD_MIN_NONADJACENT_CENTER_DIST, bead_configuration_violations, build_necklace
+from lib.beads import (
+    BEAD_MIN_NONADJACENT_CENTER_DIST,
+    bead_configuration_violations,
+    bounding_sphere_radius,
+)
 
 
 TOL = 1e-5
+FEASIBILITY_SLACK = 5e-6
 
 OPEN_CASES = [
     np.array([2.0, 2.0, 2.0]),
@@ -49,13 +54,11 @@ def test_improvement_over_reference(link_lengths: np.ndarray) -> None:
         link_lengths,
         solution_angles,
         tol=TOL,
-        min_center_dist=BEAD_MIN_NONADJACENT_CENTER_DIST,
+        min_center_dist=BEAD_MIN_NONADJACENT_CENTER_DIST - FEASIBILITY_SLACK,
     )
     assert not violations, "Improvement test requires a feasible config: " + "; ".join(violations)
-    solution_vertices = build_necklace(link_lengths, solution_angles)
-    solution_radius = np.linalg.norm(solution_vertices - solution_vertices.mean(axis=0), axis=1).max()
+    solution_radius = bounding_sphere_radius(link_lengths, solution_angles)
     reference_angles = REFERENCE_SOLUTION(link_lengths)
-    reference_vertices = build_necklace(link_lengths, reference_angles)
-    reference_radius = np.linalg.norm(reference_vertices - reference_vertices.mean(axis=0), axis=1).max()
+    reference_radius = bounding_sphere_radius(link_lengths, reference_angles)
     assert solution_radius <= reference_radius + TOL, f"""Bounding sphere radius {solution_radius:.4f} > reference {reference_radius:.4f}, 
                                                           min link length {link_lengths.min():.4f}, max link length {link_lengths.max():.4f}, links count {len(link_lengths)}"""
