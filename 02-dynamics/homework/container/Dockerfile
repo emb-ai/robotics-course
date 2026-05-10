@@ -3,8 +3,8 @@ FROM --platform=linux/amd64 python:3.10-slim-bookworm
 
 WORKDIR /app
 
-COPY 02-dynamics/homework/container/requirements-tests.txt /tmp/requirements-tests.txt
-RUN pip install --no-cache-dir -r /tmp/requirements-tests.txt
+COPY 02-dynamics/homework/container/requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 COPY . .
 COPY 02-dynamics/homework/container/entrypoint.sh /entrypoint.sh

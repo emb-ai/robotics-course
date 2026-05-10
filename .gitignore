@@ -217,10 +217,13 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+# Agent development
 .cursorignore
 .cursorindexingignore
 /.cursor/
 .vscode/
+**/AGENTS.md
+**/CLAUDE.md
 
 # Xcode user-specific files
 *.xcworkspace/xcuserdata/

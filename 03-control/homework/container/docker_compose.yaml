@@ -1,0 +1,14 @@
+# REPO_ROOT must be absolute repo path (set by container/run.sh or autograder).
+services:
+  homework-tests:
+    image: ai_in_robotics_03_control_hw_tests
+    environment:
+      GRADING_STUDENT_SUBMISSION: "0"
+    build:
+      context: ${REPO_ROOT}
+      dockerfile: 03-control/homework/container/Dockerfile
+    volumes:
+      - ${REPO_ROOT}:/app:ro
+      - ${REPO_ROOT}/dev/03-control/homework/reference_solution:/app/03-control/homework/reference_solution:ro
+      - ${REPO_ROOT}/dev/03-control/homework/hidden_tests:/app/03-control/homework/hidden_tests:ro
+    working_dir: /app/03-control/homework

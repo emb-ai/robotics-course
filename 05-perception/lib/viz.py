@@ -1074,6 +1074,7 @@ def _update_imu_drift_live(fig: plt.Figure, tracker: Any) -> None:
         return
     ts = np.array(tracker.timestamps)
     accels = np.array(tracker.accels) if tracker.accels else np.zeros((1, 3))
+    gyros = np.array(tracker.gyros) if tracker.gyros else np.zeros((1, 3))
     positions = np.array(tracker.positions) if tracker.positions else np.zeros((1, 3))
 
     axes = fig.axes
@@ -1087,13 +1088,20 @@ def _update_imu_drift_live(fig: plt.Figure, tracker: Any) -> None:
     axes[0].set_title("Live IMU — Accelerometer")
     axes[0].legend(loc="upper right", fontsize=7)
 
-    axes[1].plot(ts, positions[:, 0], label="x", lw=1.5)
-    axes[1].plot(ts, positions[:, 1], label="y", lw=1.5)
-    axes[1].plot(ts, positions[:, 2], label="z", lw=1.5)
-    axes[1].set_ylabel("Position (m)")
-    axes[1].set_xlabel("Time (s)")
-    axes[1].set_title("Integrated Position (drift)")
+    axes[1].plot(ts, gyros[:, 0], label="gx", lw=1)
+    axes[1].plot(ts, gyros[:, 1], label="gy", lw=1)
+    axes[1].plot(ts, gyros[:, 2], label="gz", lw=1)
+    axes[1].set_ylabel("Gyro (rad/s)")
+    axes[1].set_title("Live IMU — Gyroscope")
     axes[1].legend(loc="upper right", fontsize=7)
+
+    axes[2].plot(ts, positions[:, 0], label="x", lw=1.5)
+    axes[2].plot(ts, positions[:, 1], label="y", lw=1.5)
+    axes[2].plot(ts, positions[:, 2], label="z", lw=1.5)
+    axes[2].set_ylabel("Position (m)")
+    axes[2].set_xlabel("Time (s)")
+    axes[2].set_title("Integrated Position (drift)")
+    axes[2].legend(loc="upper right", fontsize=7)
 
     for ax in axes:
         ax.grid(True, alpha=0.3)
@@ -1101,7 +1109,7 @@ def _update_imu_drift_live(fig: plt.Figure, tracker: Any) -> None:
 
 
 def create_live_imu_drift_plot() -> LivePlot:
-    fig, axes = plt.subplots(2, 1, figsize=(9, 5), sharex=True)
+    fig, axes = plt.subplots(3, 1, figsize=(9, 7), sharex=True)
     fig.suptitle("Live IMU Drift", fontsize=11)
     return LivePlot(fig, _update_imu_drift_live)
 

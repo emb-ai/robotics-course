@@ -1,0 +1,9 @@
+pytest
+numpy
+scipy
+matplotlib
+sympy
+torch
+pytorch-kinematics
+trimesh
+ipython

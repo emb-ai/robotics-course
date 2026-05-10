@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>As easy as riding a bike</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+    #unicycle-container { position: relative; width: 100%; height: 100%; overflow: hidden; }
+  </style>
+</head>
+<body>
+  <div id="unicycle-container"></div>
+  <!-- OrbitControls (and other three/examples/jsm modules) import the bare specifier "three". -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.module.js",
+      "@mujoco/mujoco": "https://cdn.jsdelivr.net/npm/@mujoco/mujoco@3.7.0/mujoco.js"
+    }
+  }
+  </script>
+  <script>
+    window.UNICYCLE_VISUALIZER = { containerId: "unicycle-container" };
+  </script>
+  <script type="module">
+    import { startUnicycleViewer } from "./main.js";
+    startUnicycleViewer(window.UNICYCLE_VISUALIZER).catch((err) => {
+      console.error("Unicycle init failed:", err);
+    });
+  </script>
+</body>
+</html>

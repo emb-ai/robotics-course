@@ -40,6 +40,9 @@ def test_run_writes_files_and_calls_docker(mock_subprocess, mock_week_registry):
     assert "homework-tests" in cmd
     assert "-e" in cmd
     assert "GRADING_STUDENT_SUBMISSION=1" in cmd
+    assert any(
+        isinstance(a, str) and a.startswith("GRADING_TEST_TIMEOUT_SEC=") for a in cmd
+    )  # week 01 autograder.yaml limits.timeout_sec
     # Check -v volume mount
     vol_idx = cmd.index("-v") if "-v" in cmd else cmd.index("--volume") if "--volume" in cmd else -1
     assert vol_idx >= 0 or any("-v" in str(a) or "solutions" in str(a) for a in call_args[0])

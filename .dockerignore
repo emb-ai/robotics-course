@@ -1,13 +1,36 @@
-# Build context for tools/deploy/Dockerfile.tools (context = repo root)
-.git
-dev
-.autograder-tmp
-__pycache__
+# Secrets and dev-only content — never bake into Docker images
+.env
+dev/
+
+# Git history
+.git/
+.gitignore
+
+# Python caches
+__pycache__/
 *.pyc
-.pytest_cache
-.ipynb_checkpoints
-.venv
-venv
-node_modules
-*.egg-info
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Autograder temp dirs (created at runtime)
+.autograder-tmp/
+
+# Jupyter notebook checkpoints and outputs
+.ipynb_checkpoints/
+
+# Editor / OS artifacts
 .DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Large assets not needed for tools image
+*/assets/
+node_modules/

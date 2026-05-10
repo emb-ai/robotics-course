@@ -32,7 +32,7 @@ def mark_job_started(job: Any) -> None:
         r = get_redis()
         r.setex(PROCESSING_KEY, 7200, _payload(job, "started", "grading in progress"))
     except Exception as e:
-        logger.debug("telemetry mark_job_started: %s", e)
+        logger.warning("telemetry mark_job_started failed: %s", e)
 
 
 def mark_job_finished(job: Any, status: str, detail: str = "") -> None:
@@ -40,7 +40,9 @@ def mark_job_finished(job: Any, status: str, detail: str = "") -> None:
         from shared.redis_pool import get_redis
 
         r = get_redis()
-        r.delete(PROCESSING_KEY)
-        r.set(LAST_EVENT_KEY, _payload(job, status, detail))
+        pipe = r.pipeline()
+        pipe.delete(PROCESSING_KEY)
+        pipe.set(LAST_EVENT_KEY, _payload(job, status, detail))
+        pipe.execute()
     except Exception as e:
-        logger.debug("telemetry mark_job_finished: %s", e)
+        logger.warning("telemetry mark_job_finished failed: %s", e)

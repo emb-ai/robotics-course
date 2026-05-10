@@ -237,7 +237,14 @@ async def document_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         first_name=user.first_name,
         username=user.username,
     )
-    push_job(job)
+    try:
+        push_job(job)
+    except Exception as e:
+        logger.exception("Failed to enqueue job for user=%s week=%s", user.id, week)
+        await update.message.reply_text(
+            "Failed to queue your submission (queue unavailable). Please try again in a few minutes."
+        )
+        return
     await update.message.reply_text(f"Queued for week {week}. You'll get results here shortly.")
 
 

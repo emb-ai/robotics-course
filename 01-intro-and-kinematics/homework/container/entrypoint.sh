@@ -3,6 +3,16 @@ set -e
 export PYTEST_CACHE_DIR="${PYTEST_CACHE_DIR:-/tmp/pytest-cache}"
 mkdir -p "$PYTEST_CACHE_DIR"
 
+# When set by the autograder (from homework autograder.yaml limits.timeout_sec), cap pytest
+# wall-clock time. Host subprocess timeout is separate (build/pull + this run).
+run_pytest() {
+  if [ -n "${GRADING_TEST_TIMEOUT_SEC:-}" ] && [ "${GRADING_TEST_TIMEOUT_SEC}" != "0" ]; then
+    exec timeout --preserve-status --kill-after=10 "${GRADING_TEST_TIMEOUT_SEC}" "$@"
+  else
+    exec "$@"
+  fi
+}
+
 HW_SRC=/app/01-intro-and-kinematics/homework
 
 if [ -d "$HW_SRC/reference_solution" ] && [ -n "$(ls -A "$HW_SRC/reference_solution" 2>/dev/null)" ]; then
@@ -19,13 +29,13 @@ if [ -d "$HW_SRC/reference_solution" ] && [ -n "$(ls -A "$HW_SRC/reference_solut
       cp "$f" "solutions/$bn"
     done
   fi
-  exec pytest tests/ hidden_tests/ -v --import-mode=importlib "$@"
+  run_pytest pytest tests/ hidden_tests/ -v --import-mode=importlib "$@"
 else
   cd "$HW_SRC"
   # When args are given (autograder partial submission), run only those test paths to avoid importing missing solution modules
   if [ $# -gt 0 ]; then
-    exec pytest -v "$@"
+    run_pytest pytest -v "$@"
   else
-    exec pytest tests/ -v "$@"
+    run_pytest pytest tests/ -v "$@"
   fi
 fi

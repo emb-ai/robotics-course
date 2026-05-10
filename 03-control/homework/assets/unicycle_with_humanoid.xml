@@ -1,0 +1,189 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mujoco model="Humanoid">
+  <!-- Re-rooted at the wheel: the free joint sits on wheel_and_crank so the
+       kinematic chain grows outward from the ground contact. Every joint on
+       the former torso->...->wheel spine was moved to its new child body and
+       its axis was negated, which keeps all joint angles, ranges, and actuator
+       ctrl semantics identical to the original torso-rooted model. -->
+  <compiler angle="radian" />
+
+  <option timestep="0.005" />
+
+  <visual>
+    <global azimuth="120" elevation="-20" offwidth="2560" offheight="1440" />
+    <map force="0.1" zfar="30" />
+  </visual>
+
+  <statistic center="0 0 0.7" />
+
+  <asset>
+    <texture type="skybox" colorspace="auto" name="texture_0_" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="32" height="192" />
+    <texture type="cube" colorspace="auto" name="body" builtin="flat" mark="cross" rgb1="0.8 0.6 0.4" rgb2="0.8 0.6 0.4" markrgb="1 1 1" width="128" height="768" />
+    <texture type="2d" colorspace="auto" name="grid" builtin="checker" rgb1="0.1 0.2 0.3" rgb2="0.2 0.3 0.4" width="512" height="512" />
+    <material name="body" texture="body" texuniform="true" rgba="0.8 0.6 0.4 1" />
+    <material name="grid" texture="grid" texuniform="true" reflectance="0.2" />
+    <mesh name="seat" file="unicycle/seat.obj" />
+    <mesh name="shaft" file="unicycle/shaft.obj" />
+    <mesh name="wheel_crank_mesh" file="unicycle/wheel_crank_mesh.obj" />
+  </asset>
+
+  <worldbody>
+    <geom name="floor" size="0 0 0.05" type="plane" material="grid" />
+    <light name="spotlight" target="torso" pos="0 -6 4" dir="0 0 -1" cutoff="30" diffuse="0.8 0.8 0.8" mode="targetbodycom" />
+    <light name="top" pos="0 0 2" dir="0 0 -1" mode="trackcom" />
+
+    <body name="wheel_and_crank" pos="-0.0131 0 0.27">
+      <joint name="root" type="free" />
+      <geom name="wheel_and_crank" type="mesh" contype="0" conaffinity="0" mesh="wheel_crank_mesh" />
+      <geom name="wheel_collision" size="0.267329 0.057815 0.267329" type="ellipsoid" rgba="1 0 0 0" />
+      <body name="left_pedal" pos="0 0.1288 0.126">
+        <joint name="left_pedal" pos="0 0 0" axis="0 -1 0" limited="false" range="0 3.14159" actuatorfrclimited="false" />
+        <geom name="left_pedal" size="0.03537 0.052699 0.005951" type="box" contype="0" conaffinity="0" />
+      </body>
+      <body name="right_pedal" pos="0 -0.1288 -0.126">
+        <joint name="right_pedal" pos="0 0 0" axis="0 -1 0" limited="false" range="0 3.14159" actuatorfrclimited="false" />
+        <geom name="right_pedal" size="0.03537 0.052699 0.005951" type="box" contype="0" conaffinity="0" />
+      </body>
+      <body name="shaft" pos="0 0 0.2695">
+        <!-- wheel joint lives on the new child `shaft` (was on wheel_and_crank).
+             Axis flipped (0 -1 0) so that angle θ and gear sign carry over. -->
+        <joint name="wheel" pos="0 0 -0.2695" axis="0 -1 0" limited="false" actuatorfrclimited="false" />
+        <geom name="shaft" type="mesh" contype="0" conaffinity="0" mesh="shaft" />
+        <body name="seat" pos="-0.005 0 0.3401">
+          <!-- No joint between shaft and seat: they were rigidly attached in the
+               original model as well (shaft was a child of seat without a joint). -->
+          <geom name="seat" type="mesh" contype="0" conaffinity="0" mesh="seat" />
+          <body name="pelvis" pos="0.0081 0 0.0954">
+            <!-- pelvis_y/x were on `seat` originally; now on `pelvis` (new child).
+                 Axes negated to preserve angle, range, and actuator sign. -->
+            <joint name="pelvis_y" pos="-0.02 0 0" axis="0 -1 0" limited="false" actuatorfrclimited="false" />
+            <joint name="pelvis_x" pos="-0.02 0 0" axis="-1 0 0" limited="false" actuatorfrclimited="false" />
+            <geom name="butt" size="0.09 0.07" pos="-0.02 0 0" quat="0.707107 0.707107 0 0" type="capsule" condim="1" group="1" friction="0.7" solref="0.015" solimp="0.9 0.99 0.003" material="body" />
+            <body name="thigh_right" pos="8.38191e-09 -0.1 -0.04" quat="0.939078 -0.0648169 -0.120567 -0.315269">
+              <joint name="hip_x_right" pos="0 0 0" axis="1 0 0" solimplimit="0 0.99 0.01" stiffness="10" limited="true" range="-0.523599 0.174533" armature="0.01" damping="5" />
+              <joint name="hip_z_right" pos="0 0 0" axis="0 0 1" solimplimit="0 0.99 0.01" stiffness="10" limited="true" range="-1.0472 0.610865" armature="0.01" damping="5" />
+              <joint name="hip_y_right" pos="0 0 0" axis="0 1 0" solimplimit="0 0.99 0.01" stiffness="10" limited="true" range="-2.61799 0.349066" armature="0.01" damping="5" />
+              <geom name="thigh_right" size="0.06 0.170074" pos="0 0.005 -0.17" quat="0.999892 0.0147011 0 0" type="capsule" condim="1" group="1" friction="0.7" solref="0.015" solimp="0.9 0.99 0.003" material="body" />
+              <body name="shin_right" pos="-0.00635949 0.00921617 -0.398946" quat="0.949332 0.00101535 0.286737 0.128644">
+                <joint name="knee_right" pos="0 0 0.02" axis="0 -1 0" solimplimit="0 0.99 0.01" stiffness="1" limited="true" range="-2.21715 0.610289" armature="0.01" damping="0.2" />
+                <geom name="shin_right" size="0.049 0.15" pos="0 0 -0.15" type="capsule" condim="1" group="1" friction="0.7" solref="0.015" solimp="0.9 0.99 0.003" material="body" />
+                <body name="foot_right" pos="0.0116148 0.00234315 -0.388982" quat="0.966692 -0.0143102 -0.162825 0.196951">
+                  <joint name="ankle_y_right" pos="0 0 0.08" axis="0 1 0" solimplimit="0 0.99 0.01" stiffness="6" limited="true" range="-0.732884 1.36152" armature="0.01" damping="0.2" />
+                  <joint name="ankle_x_right" pos="0 0 0.04" axis="0.894427 0 0.447214" solimplimit="0 0.99 0.01" stiffness="3" limited="true" range="-0.872665 0.872665" armature="0.01" damping="0.2" />
+                  <geom name="foot1_right" size="0.027 0.105475" pos="0.035 -0.02 0" quat="0.707107 -0.0670402 -0.703922 0" type="capsule" condim="1" group="1" friction="0.7" solref="0.015" solimp="0.9 0.99 0.003" material="body" />
+                  <geom name="foot2_right" size="0.027 0.105475" pos="0.035 0.02 0" quat="0.707107 0.0670402 -0.703922 0" type="capsule" condim="1" group="1" friction="0.7" solref="0.015" solimp="0.9 0.99 0.003" material="body" />
+                </body>
+              </body>
+            </body>
+            <body name="thigh_left" pos="4.47035e-08 0.1 -0.0400003" quat="0.911995 0.0719339 -0.400062 0.0551492">
+              <joint name="hip_x_left" pos="0 0 0" axis="-1 0 0" solimplimit="0 0.99 0.01" stiffness="10" limited="true" range="-0.523599 0.174533" armature="0.01" damping="5" />
+              <joint name="hip_z_left" pos="0 0 0" axis="0 0 -1" solimplimit="0 0.99 0.01" stiffness="10" limited="true" range="-1.0472 0.610865" armature="0.01" damping="5" />
+              <joint name="hip_y_left" pos="0 0 0" axis="0 1 0" solimplimit="0 0.99 0.01" stiffness="10" limited="true" range="-2.61799 0.349066" armature="0.01" damping="5" />
+              <geom name="thigh_left" size="0.06 0.170074" pos="0 -0.005 -0.17" quat="0.999892 -0.0147011 0 0" type="capsule" condim="1" group="1" friction="0.7" solref="0.015" solimp="0.9 0.99 0.003" material="body" />
+              <body name="shin_left" pos="-0.0178097 -0.00970205 -0.389095" quat="0.607004 -0.017243 0.793979 -0.0290931">
+                <joint name="knee_left" pos="0 0 0.02" axis="0 -1 0" solimplimit="0 0.99 0.01" stiffness="1" limited="true" range="-0.948467 1.87897" armature="0.01" damping="0.2" />
+                <geom name="shin_left" size="0.049 0.15" pos="0 0 -0.15" type="capsule" condim="1" group="1" friction="0.7" solref="0.015" solimp="0.9 0.99 0.003" material="body" />
+                <body name="foot_left" pos="0.0328847 -0.00254003 -0.381537" quat="0.874073 0.00421001 -0.482402 -0.0571591">
+                  <joint name="ankle_y_left" pos="0 0 0.08" axis="0 1 0" solimplimit="0 0.99 0.01" stiffness="6" limited="true" range="-0.044683 2.04972" armature="0.01" damping="0.2" />
+                  <joint name="ankle_x_left" pos="0 0 0.04" axis="-0.894427 0 -0.447214" solimplimit="0 0.99 0.01" stiffness="3" limited="true" range="-0.872665 0.872665" armature="0.01" damping="0.2" />
+                  <geom name="foot1_left" size="0.027 0.105475" pos="0.035 -0.02 0" quat="0.707107 -0.0670402 -0.703922 0" type="capsule" condim="1" group="1" friction="0.7" solref="0.015" solimp="0.9 0.99 0.003" material="body" />
+                  <geom name="foot2_left" size="0.027 0.105475" pos="0.035 0.02 0" quat="0.707107 0.0670402 -0.703922 0" type="capsule" condim="1" group="1" friction="0.7" solref="0.015" solimp="0.9 0.99 0.003" material="body" />
+                </body>
+              </body>
+            </body>
+            <body name="waist_lower" pos="0 0 0.165">
+              <!-- abdomen_x was on pelvis; now on waist_lower. Axis negated. -->
+              <joint name="abdomen_x" pos="0 0 -0.065" axis="-1 0 0" solimplimit="0 0.99 0.01" stiffness="10" limited="true" range="-0.610865 0.610865" armature="0.01" damping="5" />
+              <geom name="waist_lower" size="0.06 0.06" quat="0.707107 0.707107 0 0" type="capsule" condim="1" group="1" friction="0.7" solref="0.015" solimp="0.9 0.99 0.003" material="body" />
+              <body name="torso" pos="0.01 0 0.26">
+                <!-- abdomen_y/z were on waist_lower; now on torso. Axes negated. -->
+                <joint name="abdomen_y" pos="-0.01 0 -0.195" axis="0 -1 0" ref="-0.42649" solimplimit="0 0.99 0.01" stiffness="10" limited="true" range="-1.309 0.523599" armature="0.01" damping="5" />
+                <joint name="abdomen_z" pos="-0.01 0 -0.195" axis="0 0 -1" solimplimit="0 0.99 0.01" stiffness="20" limited="true" range="-0.785398 0.785398" armature="0.01" damping="5" />
+                <geom name="torso" size="0.07 0.07" quat="0.707107 0.707107 0 0" type="capsule" condim="1" group="1" friction="0.7" solref="0.015" solimp="0.9 0.99 0.003" material="body" />
+                <geom name="waist_upper" size="0.06 0.06" pos="-0.01 0 -0.12" quat="0.707107 0.707107 0 0" type="capsule" condim="1" group="1" friction="0.7" solref="0.015" solimp="0.9 0.99 0.003" material="body" />
+                <camera name="back" pos="-3 0 1" quat="0.601501 0.371748 -0.371748 -0.601501" mode="trackcom" />
+                <camera name="side" pos="0 -3 1" quat="0.850651 0.525731 0 0" mode="trackcom" />
+                <body name="head" pos="-1.49012e-08 0 0.19" quat="-0.0575111 0 0.998345 0">
+                  <geom name="head" size="0.09" condim="1" group="1" friction="0.7" solref="0.015" solimp="0.9 0.99 0.003" material="body" />
+                  <camera name="egocentric" pos="0.09 0 0" quat="0.524286 0.474472 -0.474472 -0.524286" fovy="80" />
+                </body>
+                <body name="upper_arm_right" pos="5.96046e-08 -0.17 0.0600003" quat="0.824564 0.121694 0.296208 -0.466418">
+                  <joint name="shoulder1_right" pos="0 0 0" axis="0.816497 0.408248 0.408248" solimplimit="0 0.99 0.01" stiffness="1" limited="true" range="-1.48353 1.0472" armature="0.01" damping="0.2" />
+                  <joint name="shoulder2_right" pos="0 0 0" axis="0 -0.707107 0.707107" solimplimit="0 0.99 0.01" stiffness="1" limited="true" range="-1.48353 1.0472" armature="0.01" damping="0.2" />
+                  <geom name="upper_arm_right" size="0.04 0.138564" pos="0.08 -0.08 -0.08" quat="0.888074 -0.325058 -0.325058 0" type="capsule" condim="1" group="1" friction="0.7" solref="0.015" solimp="0.9 0.99 0.003" material="body" />
+                  <body name="lower_arm_right" pos="0.18 -0.18 -0.18" quat="0.980809 0.187682 -0.0272997 -0.0451997">
+                    <joint name="elbow_right" pos="0 0 0" axis="0 -0.707107 0.707107" solimplimit="0 0.99 0.01" limited="true" range="-1.74533 0.872665" armature="0.01" damping="0.2" />
+                    <geom name="lower_arm_right" size="0.031 0.138564" pos="0.09 0.09 0.09" quat="0.459701 0.627963 -0.627963 0" type="capsule" condim="1" group="1" friction="0.7" solref="0.015" solimp="0.9 0.99 0.003" material="body" />
+                    <body name="hand_right" pos="0.18 0.18 0.18" quat="0.99907 0.0366211 -0.0227029 0.00127454">
+                      <geom name="hand_right" size="0.04" quat="0.888074 -0.325058 0.325058 0" condim="1" group="1" friction="0.7" solref="0.015" solimp="0.9 0.99 0.003" material="body" />
+                    </body>
+                  </body>
+                </body>
+                <body name="upper_arm_left" pos="1.04308e-07 0.17 0.0600001" quat="0.824564 -0.121694 0.296208 0.466418">
+                  <joint name="shoulder1_left" pos="0 0 0" axis="-0.816497 0.408248 -0.408248" solimplimit="0 0.99 0.01" stiffness="1" limited="true" range="-1.48353 1.0472" armature="0.01" damping="0.2" />
+                  <joint name="shoulder2_left" pos="0 0 0" axis="0 -0.707107 -0.707107" solimplimit="0 0.99 0.01" stiffness="1" limited="true" range="-1.48353 1.0472" armature="0.01" damping="0.2" />
+                  <geom name="upper_arm_left" size="0.04 0.138564" pos="0.08 0.08 -0.08" quat="0.888074 0.325058 -0.325058 0" type="capsule" condim="1" group="1" friction="0.7" solref="0.015" solimp="0.9 0.99 0.003" material="body" />
+                  <body name="lower_arm_left" pos="0.18 0.18 -0.18" quat="0.980809 -0.187682 -0.0273001 0.0451995">
+                    <joint name="elbow_left" pos="0 0 0" axis="0 -0.707107 -0.707107" solimplimit="0 0.99 0.01" limited="true" range="-1.74533 0.872665" armature="0.01" damping="0.2" />
+                    <geom name="lower_arm_left" size="0.031 0.138564" pos="0.09 -0.09 0.09" quat="0.459701 -0.627963 -0.627963 0" type="capsule" condim="1" group="1" friction="0.7" solref="0.015" solimp="0.9 0.99 0.003" material="body" />
+                    <body name="hand_left" pos="0.18 -0.18 0.18" quat="0.99907 -0.0366211 -0.022703 -0.00127455">
+                      <geom name="hand_left" size="0.04" quat="0.888074 0.325058 0.325058 0" condim="1" group="1" friction="0.7" solref="0.015" solimp="0.9 0.99 0.003" material="body" />
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <contact>
+    <exclude name="exclude_0_" body1="waist_lower" body2="thigh_right" />
+    <exclude name="exclude_1_" body1="waist_lower" body2="thigh_left" />
+  </contact>
+
+  <equality>
+    <weld name="left_foot_pedal" body1="foot_left" body2="left_pedal" anchor="0 0 0" relpose="0 0 0 0 0 0 0" torquescale="1" />
+    <weld name="right_foot_pedal" body1="foot_right" body2="right_pedal" anchor="0 0 0" relpose="0 0 0 0 0 0 0" torquescale="1" />
+    <connect name="left_hand_fixture" body1="hand_left" body2="head" anchor="0 0 0" />
+    <connect name="right_hand_fixture" body1="hand_right" body2="head" anchor="0 0 0" />
+  </equality>
+
+  <tendon>
+    <fixed name="hamstring_right" limited="true" range="-0.3 2">
+      <joint joint="hip_y_right" coef="0.5" />
+      <joint joint="knee_right" coef="-0.5" />
+    </fixed>
+    <fixed name="hamstring_left" limited="true" range="-0.3 2">
+      <joint joint="hip_y_left" coef="0.5" />
+      <joint joint="knee_left" coef="-0.5" />
+    </fixed>
+  </tendon>
+
+  <actuator>
+    <general name="abdomen_z" joint="abdomen_z" ctrllimited="true" ctrlrange="-1 1" gear="40 0 0 0 0 0" />
+    <general name="abdomen_y" joint="abdomen_y" ctrllimited="true" ctrlrange="-1 1" gear="40 0 0 0 0 0" />
+    <general name="abdomen_x" joint="abdomen_x" ctrllimited="true" ctrlrange="-1 1" gear="40 0 0 0 0 0" />
+    <general name="hip_x_right" joint="hip_x_right" ctrllimited="true" ctrlrange="-1 1" gear="40 0 0 0 0 0" />
+    <general name="hip_z_right" joint="hip_z_right" ctrllimited="true" ctrlrange="-1 1" gear="40 0 0 0 0 0" />
+    <general name="hip_y_right" joint="hip_y_right" ctrllimited="true" ctrlrange="-1 1" gear="120 0 0 0 0 0" />
+    <general name="knee_right" joint="knee_right" ctrllimited="true" ctrlrange="-1 1" gear="80 0 0 0 0 0" />
+    <general name="ankle_y_right" joint="ankle_y_right" ctrllimited="true" ctrlrange="-1 1" gear="20 0 0 0 0 0" />
+    <general name="ankle_x_right" joint="ankle_x_right" ctrllimited="true" ctrlrange="-1 1" gear="20 0 0 0 0 0" />
+    <general name="hip_x_left" joint="hip_x_left" ctrllimited="true" ctrlrange="-1 1" gear="40 0 0 0 0 0" />
+    <general name="hip_z_left" joint="hip_z_left" ctrllimited="true" ctrlrange="-1 1" gear="40 0 0 0 0 0" />
+    <general name="hip_y_left" joint="hip_y_left" ctrllimited="true" ctrlrange="-1 1" gear="120 0 0 0 0 0" />
+    <general name="knee_left" joint="knee_left" ctrllimited="true" ctrlrange="-1 1" gear="80 0 0 0 0 0" />
+    <general name="ankle_y_left" joint="ankle_y_left" ctrllimited="true" ctrlrange="-1 1" gear="20 0 0 0 0 0" />
+    <general name="ankle_x_left" joint="ankle_x_left" ctrllimited="true" ctrlrange="-1 1" gear="20 0 0 0 0 0" />
+    <general name="shoulder1_right" joint="shoulder1_right" ctrllimited="true" ctrlrange="-1 1" gear="20 0 0 0 0 0" />
+    <general name="shoulder2_right" joint="shoulder2_right" ctrllimited="true" ctrlrange="-1 1" gear="20 0 0 0 0 0" />
+    <general name="elbow_right" joint="elbow_right" ctrllimited="true" ctrlrange="-1 1" gear="40 0 0 0 0 0" />
+    <general name="shoulder1_left" joint="shoulder1_left" ctrllimited="true" ctrlrange="-1 1" gear="20 0 0 0 0 0" />
+    <general name="shoulder2_left" joint="shoulder2_left" ctrllimited="true" ctrlrange="-1 1" gear="20 0 0 0 0 0" />
+    <general name="elbow_left" joint="elbow_left" ctrllimited="true" ctrlrange="-1 1" gear="40 0 0 0 0 0" />
+    <general name="wheel" joint="wheel" ctrllimited="false" forcelimited="false" actlimited="false" gear="100 0 0 0 0 0" />
+  </actuator>
+</mujoco>

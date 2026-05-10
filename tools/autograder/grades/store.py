@@ -44,8 +44,8 @@ def upsert_grade(
         INSERT INTO grades (telegram_id, week_id, problem_id, passed, points, submitted_at)
         VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(telegram_id, week_id, problem_id) DO UPDATE SET
-            passed = excluded.passed,
-            points = excluded.points,
+            passed = MAX(grades.passed, excluded.passed),
+            points = MAX(COALESCE(grades.points, 0), COALESCE(excluded.points, 0)),
             submitted_at = CURRENT_TIMESTAMP
         """,
         (telegram_id, week_id, problem_id, passed, points),
@@ -62,9 +62,11 @@ def upsert_grades_batch(
     username: str | None = None,
 ) -> None:
     upsert_student(conn, telegram_id, first_name, username)
-    pts_cfg = problem_points or {}
     for problem_id, passed in problem_results.items():
-        scored = (passed * pts_cfg.get(problem_id, 1)) if pts_cfg else (passed if passed else 0)
+        if problem_points is not None:
+            scored = passed * problem_points.get(problem_id, 1)
+        else:
+            scored = passed
         upsert_grade(conn, telegram_id, week_id, problem_id, passed, scored)
     conn.commit()
 

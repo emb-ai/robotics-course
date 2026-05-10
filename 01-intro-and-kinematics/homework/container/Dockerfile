@@ -2,8 +2,8 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt pytest
+COPY 01-intro-and-kinematics/homework/container/requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 COPY . .
 COPY 01-intro-and-kinematics/homework/container/entrypoint.sh /entrypoint.sh

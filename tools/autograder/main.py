@@ -5,6 +5,7 @@ import json
 import logging
 import signal
 import sys
+import time
 from pathlib import Path
 
 import redis
@@ -19,6 +20,8 @@ from .worker import process_job
 
 logger = logging.getLogger(__name__)
 shutdown = False
+
+_REDIS_RETRY_DELAY_MAX = 30  # seconds
 
 
 def main() -> None:
@@ -43,8 +46,7 @@ def main() -> None:
 
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     if not token:
-        logger.error("TELEGRAM_BOT_TOKEN not set")
-        sys.exit(1)
+        logger.warning("TELEGRAM_BOT_TOKEN not set — Telegram replies disabled (grades still stored)")
 
     try:
         from shared.redis_pool import get_redis
@@ -64,28 +66,47 @@ def main() -> None:
 
     logger.info("Autograder daemon started, consuming from %s", queue_key)
 
+    redis_retry_delay = 1
     while not shutdown:
         try:
             # BLPOP blocks until a job is available (timeout 5s for responsive shutdown)
             result = r.blpop(queue_key, timeout=5)
+            redis_retry_delay = 1  # reset backoff on successful Redis contact
             if result is None:
                 continue
             _, payload = result
-            job = Job.from_dict(json.loads(payload))
-            logger.info("Processing job: week=%s chat=%s", job.week_id, job.chat_id)
+            try:
+                job = Job.from_dict(json.loads(payload))
+            except Exception as parse_err:
+                logger.error(
+                    "Malformed job payload dropped (re-enqueue manually if needed): %s | raw=%r",
+                    parse_err,
+                    payload[:500] if payload else None,
+                )
+                continue
+
+            logger.info("[daemon] job received week=%s user_id=%s", job.week_id, job.user_id)
             try:
                 process_job(job)
-            except Exception:
-                logger.exception("Job failed")
+            except Exception as e:
+                logger.exception("[daemon] unhandled exception in process_job week=%s user_id=%s", job.week_id, job.user_id)
+                # Ensure PROCESSING_KEY is cleaned up so dashboard doesn't show phantom job
+                try:
+                    from shared.autograder_telemetry import mark_job_finished
+                    mark_job_finished(job, "error", str(e))
+                except Exception:
+                    pass
                 try:
                     from .worker import _send_telegram
-                    _send_telegram(job.chat_id, "An error occurred during grading. Please try again later.")
+                    _send_telegram(job.chat_id, "An internal error occurred during grading. Please try again later.")
                 except Exception:
                     pass
         except redis.ConnectionError:
-            logger.warning("Redis connection lost, retrying...")
+            logger.warning("Redis connection lost, retrying in %ds...", redis_retry_delay)
+            time.sleep(redis_retry_delay)
+            redis_retry_delay = min(redis_retry_delay * 2, _REDIS_RETRY_DELAY_MAX)
         except Exception:
-            logger.exception("Unexpected error")
+            logger.exception("[daemon] unexpected error")
             if shutdown:
                 break
 

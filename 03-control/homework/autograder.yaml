@@ -1,0 +1,20 @@
+solution_files:
+  - rocket.py
+  - vacman.py
+  - unicycle.py
+
+problem_ids:
+  test_rocket.py: rocket
+  test_vacman.py: vacman
+  test_unicycle.py: unicycle
+
+points:
+  rocket: 10
+  vacman: 20
+  unicycle: 20
+
+limits:
+  timeout_sec: 120
+  memory_mb: 512
+  cpus: 1
+  network: none

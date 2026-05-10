@@ -35,10 +35,10 @@ def parse_pytest_output(
     text = stdout + "\n" + stderr
 
     # Collect per-file results: test_file -> set of "passed" | "failed" | "skipped"
-    # Pattern: test_beads.py::test_X PASSED or test_beads.py::test_Y FAILED or ERROR or SKIPPED
+    # Pattern: test_beads.py::test_X PASSED or tests/test_beads.py::... or hidden_tests/test_beads.py::...
     file_results: dict[str, set[str]] = {}
     pattern = re.compile(
-        r"(?:^|\n)\s*(?:tests/)?(\w+\.py)::[\w:]+ (PASSED|FAILED|ERROR|SKIPPED)(?:\s|$)",
+        r"(?:^|\n)\s*(?:(?:tests|hidden_tests)/)?(\w+\.py)::[\w:]+ (PASSED|FAILED|ERROR|SKIPPED)(?:\s|$)",
         re.MULTILINE,
     )
     for m in pattern.finditer(text):

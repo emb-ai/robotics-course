@@ -1,0 +1,91 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mujoco model="UnicycleSimplified">
+  <compiler angle="radian" />
+
+  <option 
+    timestep="0.005" 
+    integrator="implicitfast" 
+    impratio="100" 
+    cone="elliptic"
+    solver="Newton" 
+    iterations="100" 
+    tolerance="1e-10"
+    noslip_iterations="50" 
+    noslip_tolerance="1e-8"
+  >
+  </option>
+
+  <visual>
+    <global azimuth="120" elevation="-20" offwidth="2560" offheight="1440" />
+    <map force="0.1" zfar="30" />
+  </visual>
+
+  <statistic center="0 0 0.7" />
+
+  <asset>
+    <texture type="skybox" colorspace="auto" name="texture_0_" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="32" height="192" />
+    <texture type="cube" colorspace="auto" name="body" builtin="flat" mark="cross" rgb1="0.8 0.6 0.4" rgb2="0.8 0.6 0.4" markrgb="1 1 1" width="128" height="768" />
+    <texture type="2d" colorspace="auto" name="grid" builtin="checker" rgb1="0.1 0.2 0.3" rgb2="0.2 0.3 0.4" width="512" height="512" />
+    <material name="body" texture="body" texuniform="true" rgba="0.8 0.6 0.4 1" />
+    <material name="grid" texture="grid" texuniform="true" reflectance="0.2" />
+  </asset>
+
+  <worldbody>
+    <geom name="floor" size="0 0 0.05" type="plane" material="grid" />
+    <light name="spotlight" target="com" pos="0 -6 4" dir="0 0 -1" cutoff="30" diffuse="0.8 0.8 0.8" mode="targetbodycom" />
+    <light name="top" pos="0 0 2" dir="0 0 -1" mode="trackcom" />
+
+    <body name="wheel" pos="-0.0131 0 0.27">
+      <joint name="root" type="free" />
+      <geom 
+        name="wheel_collision" 
+        size="0.267329 0.267329 0.057815" 
+        quat="0.7071068 0.7071068 0 0"
+        type="ellipsoid" 
+        rgba="0.25 0.25 0.28 1" 
+        condim="4" 
+        friction="1.5 0.01 0.0001"
+        solref="0.001 1" 
+        solimp="0.99 0.999 0.001" 
+        density="750"
+      />
+      <body name="seat" pos="-0.005 0 0.6096">
+        <joint name="wheel" pos="0.005 0 -0.6096" axis="0 -1 0" limited="false" actuatorfrclimited="false" />
+        <inertial pos="0 0 0" mass="0.001" diaginertia="1e-8 1e-8 1e-8" />
+        <!-- Visual-only thin rod: pelvis hinge -> wheel center (seat-body frame). -->
+        <geom name="link_pelvis_to_wheel" type="cylinder" fromto="0.005 0 0.0954 0.005 0 -0.6096" size="0.01" contype="0" conaffinity="0" material="body" group="1" />
+        <!-- Massless collision capsule approximating the whole humanoid
+             (torso + head + waist + pelvis + legs; arms/hands ignored).
+             Rigidly attached to the seat so it tips with the pelvis hinge
+             but does NOT spin with the wheel (the wheel joint is below the
+             seat in the new tree). density="0" keeps the seat mass at the
+             explicit inertial tag above. -->
+        <geom name="body_shell" type="capsule" pos="0.109486 -0.004766 0.035339" size="0.2255 0.5" group="3" rgba="0.5 0.5 0.9 0.25" density="0" />
+
+        <!-- Upper-body COM body. Inertial values equal the composite mass /
+             COM / principal moments of the full humanoid's upper body only
+             (torso, head, waist_lower, pelvis, both arms); legs are excluded.
+             Pelvis joint axes flipped for the same reason as the wheel joint
+             above: keep θ, range, and ctrl semantics identical to the
+             original com-rooted model. -->
+        <body name="com" pos="0.005 0 0.369073">
+          <joint name="pelvis_y" pos="0 0 -0.273673" axis="0 -1 0" limited="true" range="-0.872665 0.872665" actuatorfrclimited="false" />
+          <joint name="pelvis_x" pos="0 0 -0.273673" axis="-1 0 0" limited="true" range="-0.698132 0.698132" actuatorfrclimited="false" />
+          <inertial pos="0 0 0" mass="23.566842" diaginertia="0.773919 1.104746 1.765585" />
+          <geom name="com_marker" type="sphere" size="0.05" contype="0" conaffinity="0" rgba="0.8 0.6 0.4 0.3" />
+          <!-- Visual-only thin rod: COM sphere -> pelvis hinge (com-body frame). -->
+          <geom name="link_com_to_pelvis" type="cylinder" fromto="0 0 0 0 0 -0.273673" size="0.01" contype="0" conaffinity="0" material="body" group="1" />
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <!-- Analytical-control version: actuators are direct torques, so ctrl is a
+         generalized input (N*m) rather than a target angle. This avoids hidden
+         PD dynamics in the plant and matches the hand-derived 2D unicycle model. -->
+    <motor name="pelvis_y" joint="pelvis_y" ctrllimited="true" ctrlrange="-80 80" gear="1 0 0 0 0 0" />
+    <motor name="pelvis_x" joint="pelvis_x" ctrllimited="true" ctrlrange="-80 80" gear="1 0 0 0 0 0" />
+    <motor name="wheel" joint="wheel" ctrllimited="true" ctrlrange="-20 20" gear="1 0 0 0 0 0"/>
+  </actuator>
+</mujoco>
