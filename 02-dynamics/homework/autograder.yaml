@@ -13,6 +13,18 @@ problem_ids:
   test_joints.py: joints
   test_penalty.py: penalty
 
+test_dependencies:
+  test_kin_energy.py:
+    - kin_energy.py
+    - ode_solvers.py
+  test_joints.py:
+    - constraints.py
+    - constraints_manager.py
+    - ode_solvers.py
+  test_penalty.py:
+    - penalty.py
+    - ode_solvers.py
+
 points:
   kin_energy: 5
   joints: 5

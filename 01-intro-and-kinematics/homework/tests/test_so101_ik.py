@@ -29,6 +29,10 @@ NUM_Q_TOL = 2e-2
 # Closed-form uses the teaching diagram; FK on the calibrated URDF is typically ~1–1.5 cm off.
 ANA_POS_TOL = 1.7e-2
 ANA_ORIENT_TOL = 8e-2
+ANA_REF_ATOL = 1e-6
+ANA_REF_RTOL = 1e-7
+ANA_REF_EXTRA_CASES = 48
+ANA_REF_RNG_SEED = 2026
 
 SO101_JOINT_NAMES = (
     "shoulder_pan",
@@ -73,6 +77,48 @@ def _open_case_flags(case: dict) -> tuple[bool, bool]:
         return bool(case["solvable_analytical"]), bool(case["solvable_numerical"])
     s = bool(case["solvable"])
     return s, s
+
+
+def _eval_formula_vector(func, pose: np.ndarray, label: str) -> np.ndarray:
+    try:
+        values = func(*pose)
+    except Exception as exc:
+        pytest.fail(f"{label} formulas raised {type(exc).__name__} for pose={pose.tolist()}: {exc}")
+    arr = np.asarray(values, dtype=np.float64).reshape(-1)
+    if arr.shape != (len(SO101_JOINT_NAMES),):
+        pytest.fail(
+            f"{label} formulas returned shape {arr.shape} for pose={pose.tolist()}, "
+            f"expected {(len(SO101_JOINT_NAMES),)}"
+        )
+    return arr
+
+
+def _analytical_formula_test_poses(reference_func) -> list[np.ndarray]:
+    poses = [
+        np.asarray(case["pose"], dtype=np.float64)
+        for case in OPEN_CASES
+        if _open_case_flags(case)[0]
+    ]
+    rng = np.random.default_rng(ANA_REF_RNG_SEED)
+    target_pose_count = len(poses) + ANA_REF_EXTRA_CASES
+    attempts = 0
+    while len(poses) < target_pose_count:
+        attempts += 1
+        if attempts > 1000:
+            pytest.fail("Could not generate enough finite analytical reference test poses")
+        pose = np.array(
+            [
+                rng.uniform(0.10, 0.28),
+                rng.uniform(-0.13, 0.13),
+                rng.uniform(0.00, 0.14),
+                rng.uniform(-0.60, 0.60),
+            ],
+            dtype=np.float64,
+        )
+        ref_values = _eval_formula_vector(reference_func, pose, "reference")
+        if np.all(np.isfinite(ref_values)):
+            poses.append(pose)
+    return poses
 
 
 @pytest.mark.parametrize(
@@ -170,15 +216,41 @@ def test_numerical_vs_reference(pose: np.ndarray, solvable: bool, q_ref: np.ndar
 
 @pytest.mark.skipif(REFERENCE_SOLUTION is None, reason="Reference solution is not available")
 def test_analytical_vs_reference_formulas() -> None:
-    x = sympy.Symbol("x", real=True, positive=True)
-    y = sympy.Symbol("y", real=True, positive=True)
-    z = sympy.Symbol("z", real=True, positive=True)
-    yaw_s = sympy.Symbol("yaw_s", real=True)
-    solution_formulas = analytical_solution_formulas(x + 0.1, y, z, yaw_s)
-    reference_formulas = REFERENCE_SOLUTION(x + 0.1, y, z, yaw_s)
+    x, y, z, yaw_s = sympy.symbols("x y z yaw", real=True)
+    solution_formulas = analytical_solution_formulas(x, y, z, yaw_s)
+    reference_formulas = REFERENCE_SOLUTION(x, y, z, yaw_s)
     difference = set(SO101_JOINT_NAMES) - set(solution_formulas.keys())
     assert not difference, f"Analytical solution did not return following joint names: {difference}"
-    for name in SO101_JOINT_NAMES:
-        assert sympy.simplify(solution_formulas[name] - reference_formulas[name]) == 0, f"Symbolic mismatch for joint {name}: solution != reference"
 
+    solution_func = sympy.lambdify(
+        (x, y, z, yaw_s),
+        [solution_formulas[name] for name in SO101_JOINT_NAMES],
+        "numpy",
+    )
+    reference_func = sympy.lambdify(
+        (x, y, z, yaw_s),
+        [reference_formulas[name] for name in SO101_JOINT_NAMES],
+        "numpy",
+    )
 
+    for pose in _analytical_formula_test_poses(reference_func):
+        reference_values = _eval_formula_vector(reference_func, pose, "reference")
+        solution_values = _eval_formula_vector(solution_func, pose, "student")
+        for idx, name in enumerate(SO101_JOINT_NAMES):
+            student = solution_values[idx]
+            reference = reference_values[idx]
+            abs_error = abs(student - reference)
+            tolerance = ANA_REF_ATOL + ANA_REF_RTOL * abs(reference)
+            assert np.isfinite(reference), (
+                f"Reference formula for joint {name} returned non-finite value "
+                f"for pose={pose.tolist()}: reference={reference}"
+            )
+            assert np.isfinite(student), (
+                f"Analytical formula for joint {name} returned non-finite value "
+                f"for pose={pose.tolist()}: student={student}, reference={reference}"
+            )
+            assert abs_error <= tolerance, (
+                f"Analytical formula mismatch for joint {name} at pose={pose.tolist()}: "
+                f"student={student}, reference={reference}, abs_error={abs_error}, "
+                f"tolerance={tolerance}"
+            )
