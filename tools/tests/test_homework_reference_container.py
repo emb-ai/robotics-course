@@ -97,11 +97,24 @@ def test_reference_solution_passes_in_homework_container(week_id: str, docker_ok
         pytest.fail(msg)
 
 
-def test_hw01_entrypoint_respects_selected_tests_for_student_grading(repo_root):
-    """Batch grading passes selected test paths; staff mounts must not force all tests."""
+@pytest.mark.parametrize(
+    "topic_slug",
+    [
+        "01-intro-and-kinematics",
+        "02-dynamics",
+        "03-control",
+    ],
+)
+def test_entrypoint_selected_student_grading_uses_only_selected_and_matching_hidden_tests(repo_root, topic_slug):
+    """Batch partial grading must not collect unrelated visible or hidden tests."""
 
-    entrypoint = repo_root / "01-intro-and-kinematics" / "homework" / "container" / "entrypoint.sh"
+    entrypoint = repo_root / topic_slug / "homework" / "container" / "entrypoint.sh"
     text = entrypoint.read_text(encoding="utf-8")
 
-    assert '[ "${GRADING_STUDENT_SUBMISSION:-}" = "1" ] && [ $# -gt 0 ]' in text
-    assert 'run_pytest pytest -v "$@"' in text
+    assert "run_selected_student_tests()" in text
+    assert 'if [ "${GRADING_STUDENT_SUBMISSION:-}" = "1" ] && [ $# -gt 0 ]; then' in text
+    assert 'run_selected_student_tests "$@"' in text
+    assert 'hidden_test="hidden_tests/${arg#tests/}"' in text
+    assert '[ -f "$hidden_test" ]' in text
+    assert 'pytest tests/ -v "$@"' not in text
+    assert 'pytest tests/ hidden_tests/ -v --import-mode=importlib "$@"' not in text

@@ -20,6 +20,22 @@ run_pytest() {
   fi
 }
 
+run_selected_student_tests() {
+  selected_args=()
+  for arg in "$@"; do
+    selected_args+=("$arg")
+    case "$arg" in
+      tests/*.py)
+        hidden_test="hidden_tests/${arg#tests/}"
+        if [ -f "$hidden_test" ]; then
+          selected_args+=("$hidden_test")
+        fi
+        ;;
+    esac
+  done
+  run_pytest pytest -v --import-mode=importlib "${selected_args[@]}"
+}
+
 rm -rf /tmp/hw
 cp -rL /app/03-control/homework /tmp/hw
 cd /tmp/hw
@@ -33,11 +49,19 @@ if [ -d "reference_solution" ] && [ -n "$(ls -A reference_solution 2>/dev/null)"
       cp "$f" "solutions/$bn"
     done
   fi
-  BLOCK_REFERENCE_IMPORT=1 timeout_wrap pytest tests/ -v "$@" || true
-  r1=$?
-  timeout_wrap pytest tests/ hidden_tests/ -v --import-mode=importlib "$@"
-  r2=$?
-  exit $((r1 | r2))
+  if [ "${GRADING_STUDENT_SUBMISSION:-}" = "1" ] && [ $# -gt 0 ]; then
+    run_selected_student_tests "$@"
+  else
+    BLOCK_REFERENCE_IMPORT=1 timeout_wrap pytest tests/ -v || true
+    r1=$?
+    timeout_wrap pytest tests/ hidden_tests/ -v --import-mode=importlib
+    r2=$?
+    exit $((r1 | r2))
+  fi
 else
-  run_pytest pytest tests/ -v "$@"
+  if [ "${GRADING_STUDENT_SUBMISSION:-}" = "1" ] && [ $# -gt 0 ]; then
+    run_selected_student_tests "$@"
+  else
+    run_pytest pytest tests/ -v
+  fi
 fi

@@ -13,6 +13,22 @@ run_pytest() {
   fi
 }
 
+run_selected_student_tests() {
+  selected_args=()
+  for arg in "$@"; do
+    selected_args+=("$arg")
+    case "$arg" in
+      tests/*.py)
+        hidden_test="hidden_tests/${arg#tests/}"
+        if [ -f "$hidden_test" ]; then
+          selected_args+=("$hidden_test")
+        fi
+        ;;
+    esac
+  done
+  run_pytest pytest -v --import-mode=importlib "${selected_args[@]}"
+}
+
 HW_SRC=/app/01-intro-and-kinematics/homework
 
 if [ -d "$HW_SRC/reference_solution" ] && [ -n "$(ls -A "$HW_SRC/reference_solution" 2>/dev/null)" ]; then
@@ -30,16 +46,16 @@ if [ -d "$HW_SRC/reference_solution" ] && [ -n "$(ls -A "$HW_SRC/reference_solut
     done
   fi
   if [ "${GRADING_STUDENT_SUBMISSION:-}" = "1" ] && [ $# -gt 0 ]; then
-    run_pytest pytest -v --import-mode=importlib "$@"
+    run_selected_student_tests "$@"
   else
-    run_pytest pytest tests/ hidden_tests/ -v --import-mode=importlib "$@"
+    run_pytest pytest tests/ hidden_tests/ -v --import-mode=importlib
   fi
 else
   cd "$HW_SRC"
   # When args are given (autograder partial submission), run only those test paths to avoid importing missing solution modules
   if [ $# -gt 0 ]; then
-    run_pytest pytest -v "$@"
+    run_selected_student_tests "$@"
   else
-    run_pytest pytest tests/ -v "$@"
+    run_pytest pytest tests/ -v
   fi
 fi
