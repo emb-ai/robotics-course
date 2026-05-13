@@ -6,6 +6,10 @@ import csv
 import io
 import json
 import math
+import os
+import subprocess
+import sys
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
@@ -20,6 +24,8 @@ from .homework_runtime import (
     load_module_from_path,
     load_reference_module,
     load_submitted_module,
+    reference_file,
+    submitted_file,
 )
 
 
@@ -81,7 +87,35 @@ class HW01BeadsComparePlugin:
                         description="Beads student/reference radius comparison.",
                     )
                 )
+            video_error = None
+            try:
+                video = _beads_video_mp4(context, worst)
+            except Exception as exc:
+                video_error = str(exc)
+                artifacts.append(
+                    _write_text(
+                        context,
+                        "beads",
+                        "beads_video_error.md",
+                        f"# Beads video\n\nVideo artifact generation failed: {video_error}\n",
+                        "Beads video renderer failure.",
+                    )
+                )
+            else:
+                artifacts.append(
+                    context.artifact_store.write_bytes_artifact(
+                        context.student_id,
+                        context.problem_id,
+                        "diagnostic",
+                        "beads_compare.mp4",
+                        video,
+                        label="beads_compare.mp4",
+                        description="Beads student/reference comparison video.",
+                    )
+                )
             summary = _beads_summary_line(worst)
+            if video_error:
+                summary = f"{summary} Beads video failed: {video_error}"
             return DiagnosticResult(
                 plugin_id=self.id,
                 problem_id=context.problem_id,
@@ -460,6 +494,80 @@ def _beads_plot_png(worst: dict[str, Any], lib: Any | None) -> bytes | None:
         return buf.getvalue()
     except Exception:
         return None
+
+
+def _beads_video_mp4(context: DiagnosticContext, worst: dict[str, Any]) -> bytes:
+    if worst.get("error"):
+        raise RuntimeError(f"cannot render beads video for failed case: {worst['error']}")
+    missing = [
+        key
+        for key in ("link_lengths", "student_angles", "reference_angles")
+        if key not in worst
+    ]
+    if missing:
+        raise RuntimeError(f"cannot render beads video; missing {', '.join(missing)}")
+    script = (
+        Path(context.repo_root)
+        / "dev"
+        / HW01_TOPIC
+        / "homework"
+        / "utility"
+        / "beads"
+        / "run_beads_compare_video.py"
+    )
+    if not script.is_file():
+        raise FileNotFoundError(f"beads video renderer not found: {script}")
+
+    with tempfile.TemporaryDirectory(prefix="beads_video_") as tmp:
+        out_path = Path(tmp) / "beads_compare.mp4"
+        cmd = [
+            sys.executable,
+            str(script),
+            "--link-lengths-json",
+            json.dumps(worst["link_lengths"]),
+            "--student-angles-json",
+            json.dumps(worst["student_angles"]),
+            "--reference-angles-json",
+            json.dumps(worst["reference_angles"]),
+            "--fps",
+            "12",
+            "--segment-seconds",
+            "2.5",
+            "--width",
+            "960",
+            "--height",
+            "540",
+            "--matplotlib-only",
+            "--out",
+            str(out_path),
+        ]
+        env = os.environ.copy()
+        extra_pythonpath = [
+            str(Path(context.normalized_submission_dir).parent),
+            str(homework_dir(context)),
+        ]
+        existing_pythonpath = env.get("PYTHONPATH")
+        if existing_pythonpath:
+            extra_pythonpath.append(existing_pythonpath)
+        env["PYTHONPATH"] = os.pathsep.join(extra_pythonpath)
+        completed = subprocess.run(
+            cmd,
+            cwd=script.parent,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=75,
+            check=False,
+        )
+        if completed.returncode != 0:
+            output = "\n".join(part.strip() for part in (completed.stdout, completed.stderr) if part.strip())
+            if len(output) > 800:
+                output = output[:800] + "..."
+            raise RuntimeError(f"renderer exited with code {completed.returncode}: {output}")
+        if not out_path.is_file() or out_path.stat().st_size == 0:
+            raise RuntimeError("renderer did not produce beads_compare.mp4")
+        return out_path.read_bytes()
 
 
 @dataclass
@@ -867,4 +975,3 @@ def _so101_plot_png(rows: list[dict[str, Any]]) -> bytes | None:
         return buf.getvalue()
     except Exception:
         return None
-

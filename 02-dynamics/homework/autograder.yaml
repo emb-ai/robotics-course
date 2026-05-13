@@ -31,7 +31,7 @@ points:
   penalty: 5
 
 limits:
-  timeout_sec: 120
+  timeout_sec: 1200
   memory_mb: 512
   cpus: 1
   network: none

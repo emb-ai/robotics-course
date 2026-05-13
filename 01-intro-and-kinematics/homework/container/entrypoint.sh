@@ -29,7 +29,11 @@ if [ -d "$HW_SRC/reference_solution" ] && [ -n "$(ls -A "$HW_SRC/reference_solut
       cp "$f" "solutions/$bn"
     done
   fi
-  run_pytest pytest tests/ hidden_tests/ -v --import-mode=importlib "$@"
+  if [ "${GRADING_STUDENT_SUBMISSION:-}" = "1" ] && [ $# -gt 0 ]; then
+    run_pytest pytest -v --import-mode=importlib "$@"
+  else
+    run_pytest pytest tests/ hidden_tests/ -v --import-mode=importlib "$@"
+  fi
 else
   cd "$HW_SRC"
   # When args are given (autograder partial submission), run only those test paths to avoid importing missing solution modules

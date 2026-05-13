@@ -52,9 +52,88 @@ def test_generate_feedback_posts_openai_compatible_payload_with_bearer_header():
     assert captured["url"] == "https://example.test/v1/chat/completions"
     assert captured["headers"]["authorization"] == "Bearer secret-key"
     assert '"model":"demo-model"' in captured["payload"]
-    assert '"max_tokens":256' in captured["payload"]
+    assert '"max_tokens":1024' in captured["payload"]
     assert "system feedback prompt" in captured["payload"]
     assert "user feedback prompt" in captured["payload"]
+
+
+def test_generate_feedback_honors_max_tokens_from_env(monkeypatch):
+    captured = {}
+
+    def handler(request):
+        captured["payload"] = request.read().decode("utf-8")
+        return httpx.Response(200, json={"choices": [{"message": {"content": "Draft"}}]})
+
+    monkeypatch.setenv("ORACLE_LLM_MAX_TOKENS", "2048")
+    result = generate_feedback(
+        _prompt(),
+        FeedbackClientConfig(
+            base_url="https://example.test/v1",
+            model="demo-model",
+            transport=httpx.MockTransport(handler),
+        ),
+    )
+
+    assert result.status == "ok"
+    assert '"max_tokens":2048' in captured["payload"]
+
+
+def test_generate_feedback_extracts_text_content_parts():
+    result = generate_feedback(
+        _prompt(),
+        FeedbackClientConfig(
+            base_url="https://example.test/v1",
+            model="demo-model",
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(
+                    200,
+                    json={"choices": [{"message": {"content": [{"type": "text", "text": "Draft from parts"}]}}]},
+                )
+            ),
+        ),
+    )
+
+    assert result.status == "ok"
+    assert result.content == "Draft from parts"
+
+
+def test_generate_feedback_extracts_output_text_content_parts():
+    result = generate_feedback(
+        _prompt(),
+        FeedbackClientConfig(
+            base_url="https://example.test/v1",
+            model="demo-model",
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(
+                    200,
+                    json={"choices": [{"message": {"content": [{"type": "output_text", "text": "Draft output"}]}}]},
+                )
+            ),
+        ),
+    )
+
+    assert result.status == "ok"
+    assert result.content == "Draft output"
+
+
+def test_generate_feedback_disables_qwen_thinking_by_default():
+    captured = {}
+
+    def handler(request):
+        captured["payload"] = request.read().decode("utf-8")
+        return httpx.Response(200, json={"choices": [{"message": {"content": "Draft"}}]})
+
+    result = generate_feedback(
+        _prompt(),
+        FeedbackClientConfig(
+            base_url="https://example.test/v1",
+            model="Qwen/Qwen3.5-122B-A10B",
+            transport=httpx.MockTransport(handler),
+        ),
+    )
+
+    assert result.status == "ok"
+    assert '"chat_template_kwargs":{"enable_thinking":false}' in captured["payload"]
 
 
 def test_generate_feedback_omits_authorization_header_without_api_key():

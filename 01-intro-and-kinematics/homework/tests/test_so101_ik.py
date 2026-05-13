@@ -2,7 +2,7 @@
 SO101 downturned IK tests.
 Open numerical: FK vs target < NUM_POS_TOL (1e-3), yaw < NUM_ORIENT_TOL (5e-2).
 Open analytical: same checks with relaxed ANA_* (diagram model vs URDF FK).
-Hidden tests: joint-space distance to reference < NUM_Q_TOL (2e-2).
+Hidden numerical: same FK/yaw checks on hidden poses, without requiring one reference IK branch.
 """
 import importlib
 from pathlib import Path
@@ -25,7 +25,6 @@ URDF_PATH = _hw / "assets" / "so101" / "robot.urdf"
 
 NUM_POS_TOL = 1e-3
 NUM_ORIENT_TOL = 5e-2
-NUM_Q_TOL = 2e-2
 # Closed-form uses the teaching diagram; FK on the calibrated URDF is typically ~1–1.5 cm off.
 ANA_POS_TOL = 1.7e-2
 ANA_ORIENT_TOL = 8e-2
@@ -201,8 +200,12 @@ def test_analytical_vs_numerical_open(
 
 
 @pytest.mark.skipif(HIDDEN_CASES is None, reason="Hidden tests are not available")
-@pytest.mark.parametrize("pose, solvable, q_ref", HIDDEN_CASES or [])
-def test_numerical_vs_reference(pose: np.ndarray, solvable: bool, q_ref: np.ndarray) -> None:
+@pytest.mark.parametrize("pose, solvable, _q_ref", HIDDEN_CASES or [])
+def test_numerical_ik_hidden_fk_consistency(
+    pose: np.ndarray,
+    solvable: bool,
+    _q_ref: np.ndarray,
+) -> None:
     x, y, z, yaw = pose[0], pose[1], pose[2], pose[3]
     q_num = numerical_solution(x, y, z, yaw)
     if solvable:
@@ -211,7 +214,12 @@ def test_numerical_vs_reference(pose: np.ndarray, solvable: bool, q_ref: np.ndar
         assert q_num is None, f"Numerical IK returned solution for unsolvable pose"
         return
     q_num = np.array([q_num[name] for name in SO101_JOINT_NAMES])
-    assert np.linalg.norm(q_num - q_ref) < NUM_Q_TOL, f"Numerical vs reference joint configuration mismatch for pose={pose}"
+    chain = pk.build_chain_from_urdf(open(URDF_PATH, "rb").read())
+    serial_chain = pk.SerialChain(chain, "gripper_frame_link", "base_link")
+    position, R_actual = forward_kinematics_unpacked(serial_chain, q_num)
+    yaw_actual = _yaw_from_rotation_matrix(R_actual)
+    assert np.linalg.norm(position - np.array([x, y, z])) < NUM_POS_TOL
+    assert _yaw_difference(yaw_actual, yaw) < NUM_ORIENT_TOL
 
 
 @pytest.mark.skipif(REFERENCE_SOLUTION is None, reason="Reference solution is not available")

@@ -58,7 +58,7 @@ def test_get_points():
 
 def test_get_limits():
     limits = week_config.get_limits("01")
-    assert limits["timeout_sec"] == 120
+    assert limits["timeout_sec"] == 1200
     assert limits["memory_mb"] == 512
     assert limits["cpus"] == 1
 

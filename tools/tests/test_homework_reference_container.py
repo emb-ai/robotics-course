@@ -95,3 +95,13 @@ def test_reference_solution_passes_in_homework_container(week_id: str, docker_ok
                 "used because dev reference is incomplete vs autograder.yaml solution_files."
             )
         pytest.fail(msg)
+
+
+def test_hw01_entrypoint_respects_selected_tests_for_student_grading(repo_root):
+    """Batch grading passes selected test paths; staff mounts must not force all tests."""
+
+    entrypoint = repo_root / "01-intro-and-kinematics" / "homework" / "container" / "entrypoint.sh"
+    text = entrypoint.read_text(encoding="utf-8")
+
+    assert '[ "${GRADING_STUDENT_SUBMISSION:-}" = "1" ] && [ $# -gt 0 ]' in text
+    assert 'run_pytest pytest -v "$@"' in text

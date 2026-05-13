@@ -8,8 +8,9 @@ Three separate tools:
 
 ## Setup
 
-1. **Dependencies** (use conda env `ai_in_robotics` or a venv):
+1. **Dependencies** (use conda env `ai_in_robotics`):
    ```bash
+   conda activate ai_in_robotics
    pip install -r tools/requirements.txt
    ```
 
@@ -57,6 +58,72 @@ Three separate tools:
   ```bash
   ssh -L 5001:127.0.0.1:5001 -L 5002:127.0.0.1:5002 user@host
   ```
+
+## Batch grading cockpit
+
+Batch grading is reports-only staff tooling. It grades one homework against local one-folder-per-student submissions, writes reports under `dev/grading_batches/<run_id>/`, and does not write `tools/data/grades.db` or send Telegram messages.
+
+The batch dashboard is part of the autograder dashboard:
+
+```bash
+conda activate ai_in_robotics
+export PYTHONPATH="$PWD/tools:$PYTHONPATH"
+export ORACLE_LLM_BASE_URL="https://entrypoint/v1"
+export ORACLE_LLM_MODEL="Qwen/Qwen3.5-122B-A10B"
+export ORACLE_LLM_API_KEY="<local token>"
+export ORACLE_TIMEOUT_SEC=60
+export ORACLE_LLM_MAX_TOKENS=1024
+rtk ./tools/run_dashboards.sh
+```
+
+Open http://127.0.0.1:5002/batches. Redis is not required for these batch pages; Redis is only needed for the live queue worker path.
+
+For early smoke tests, prefer the CLI so you can cap DataSchool downloads and worker count. HW1, HW2, and HW3 are all valid batch homework ids; HW3 is first-class even though it is not registered in `tools/config/weeks.yaml` for Telegram grading.
+
+```bash
+rtk docker compose -f 03-control/homework/container/docker_compose.yaml build
+
+rtk env PYTHONPATH="$PWD/tools:$PYTHONPATH" \
+ORACLE_LLM_BASE_URL="https://entrypoint/v1" \
+ORACLE_LLM_MODEL="Qwen/Qwen3.5-122B-A10B" \
+ORACLE_LLM_API_KEY="$ORACLE_LLM_API_KEY" \
+ORACLE_TIMEOUT_SEC=60 \
+ORACLE_LLM_MAX_TOKENS=1024 \
+conda run -n ai_in_robotics python -m autograder.batch.runner \
+  --homework 03 \
+  --submissions-root /private/tmp/hw3-smoke-submissions \
+  --output-root dev/grading_batches \
+  --run-id hw3-smoke-1 \
+  --max-workers 1
+```
+
+Inspect every smoke run before scaling:
+
+- `dev/grading_batches/<run_id>/state.json` should end at `done`.
+- `dev/grading_batches/<run_id>/summary.csv` should have one row per student/problem.
+- Failed, errored, timed-out, missing, or skipped problems should have diagnostics artifacts.
+- Failed or incomplete problems should have feedback markdown/json drafts when the LLM env is configured.
+- `tools/data/grades.db` should be unchanged by reports-only batch runs.
+
+DataSchool intake:
+
+```bash
+rtk conda run -n ai_in_robotics python dev/scripts/download_dataschool_submissions.py \
+  --queue-url "PASTE_FILTERED_DATASCHOOL_QUEUE_URL" \
+  --out /private/tmp/ds-hw3-smoke \
+  --limit 3 \
+  --dry-run \
+  --debug-auth
+
+rtk conda run -n ai_in_robotics python dev/scripts/download_dataschool_submissions.py \
+  --queue-url "PASTE_FILTERED_DATASCHOOL_QUEUE_URL" \
+  --out /private/tmp/ds-hw3-smoke \
+  --limit 3
+
+rtk env PYTHONPATH="$PWD/tools:$PYTHONPATH" conda run -n ai_in_robotics python -c "from pathlib import Path; from autograder.batch.job_runner import prepare_dataschool_submissions; print(prepare_dataschool_submissions(Path('/private/tmp/ds-hw3-smoke'), Path('/private/tmp/ds-hw3-prep')))"
+```
+
+Recommended scale-up: HW3 with 3 students at `--max-workers 1`, then HW1 with 3 students, then HW2 with 3 students, then 10-20 students at `--max-workers 2`. Use `--max-workers 4` only after Docker memory, runtime, LLM latency, and artifact sizes are stable.
 
 ## Student flow
 

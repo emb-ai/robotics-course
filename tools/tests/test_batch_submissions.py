@@ -2,6 +2,8 @@
 
 from zipfile import ZipFile
 
+import pytest
+
 from autograder.batch.submissions import scan_submissions
 
 
@@ -51,3 +53,14 @@ def test_scanner_rejects_unsafe_zip_entries(tmp_path):
 
     assert result.files == {}
     assert any("unsafe" in error.lower() for error in result.errors)
+
+
+def test_scanner_rejects_dataschool_download_root_in_local_mode(tmp_path):
+    root = tmp_path / "dataschool-download"
+    student_dir = root / "HW 1. Kinematics" / "Alice__100" / "timeline"
+    student_dir.mkdir(parents=True)
+    (root / "submissions.jsonl").write_text("{}\n", encoding="utf-8")
+    (student_dir / "100-c001__solutions.zip").write_bytes(b"not a real zip")
+
+    with pytest.raises(ValueError, match="DataSchool download root"):
+        scan_submissions(root, ["beads.py"])

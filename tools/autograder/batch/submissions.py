@@ -12,11 +12,26 @@ def scan_submissions(submissions_root: str | Path, allowed_solution_files: list[
     """Scan top-level student directories for allowed Python solution files."""
 
     root = Path(submissions_root)
+    _reject_dataschool_download_root(root)
     allowed = set(allowed_solution_files)
     students: list[SubmittedStudent] = []
     for student_dir in sorted(path for path in root.iterdir() if path.is_dir()):
         students.append(_scan_student(student_dir, allowed))
     return students
+
+
+def _reject_dataschool_download_root(root: Path) -> None:
+    if not (root / "submissions.jsonl").is_file():
+        return
+    assignment_dirs = [path.name for path in root.iterdir() if path.is_dir()]
+    if not assignment_dirs:
+        return
+    examples = ", ".join(sorted(assignment_dirs)[:3])
+    raise ValueError(
+        "Local batch submissions root looks like a DataSchool download root "
+        f"({root}; assignment folders: {examples}). Use dashboard DataSchool mode "
+        "or prepare the download into one folder per student before grading."
+    )
 
 
 def _scan_student(student_dir: Path, allowed: set[str]) -> SubmittedStudent:

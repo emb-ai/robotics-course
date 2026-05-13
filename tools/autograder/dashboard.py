@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from flask import Flask, render_template_string, send_file, request, redirect, url_for, abort
 
 from autograder import config as autograder_config
+from autograder.dashboard_batch import bp as batch_blueprint
 from autograder.grading_logs import get_grading_logs_root
 from autograder.grades.store import get_leaderboard_pivoted, get_metric_leaderboard
 from shared.autograder_telemetry import LAST_EVENT_KEY, PROCESSING_KEY
@@ -21,6 +22,7 @@ from shared.log_utils import tail
 from shared.week_config import list_weeks
 
 app = Flask(__name__)
+app.register_blueprint(batch_blueprint)
 
 LOG_TAIL_LINES = 150
 LOG_FILE = Path(__file__).resolve().parent.parent / "logs" / "autograder.log"
@@ -136,6 +138,7 @@ HTML = """
       <a href="/grades/export">Export CSV</a>
       <a href="/metrics">Metric leaderboards</a>
       <a href="/grading_logs">Per-submission grading logs</a>
+      <a href="/batches">Batch grading</a>
     </p>
     <p><small>On disk: <code>{{ grading_logs_root }}</code> (full stdout/stderr per run)</small></p>
   </div>

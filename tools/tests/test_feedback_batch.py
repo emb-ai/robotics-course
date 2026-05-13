@@ -1,7 +1,10 @@
 """Tests for batch feedback draft generation."""
 
-import importlib
+import os
 import json
+import subprocess
+import sys
+from pathlib import Path
 from types import SimpleNamespace
 
 from autograder.batch.artifacts import BatchArtifactStore
@@ -126,13 +129,33 @@ def test_generate_feedback_for_student_writes_error_metadata_without_blocking(tm
 
 
 def test_feedback_package_does_not_import_dashboard_worker_or_grades_store():
-    importlib.import_module("autograder.feedback.batch_feedback")
+    tools_root = Path(__file__).resolve().parents[1]
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(tools_root) + os.pathsep + env.get("PYTHONPATH", "")
+    script = """
+import importlib
+import json
+import sys
 
-    forbidden = {
-        "autograder.dashboard",
-        "autograder.worker",
-        "autograder.grades.store",
-        "bot.dashboard",
-    }
-    imported = set(importlib.sys.modules)
-    assert forbidden.isdisjoint(imported)
+forbidden = {
+    "autograder.dashboard",
+    "autograder.worker",
+    "autograder.grades.store",
+    "bot.dashboard",
+}
+importlib.import_module("autograder.feedback.batch_feedback")
+hits = sorted(forbidden.intersection(sys.modules))
+print(json.dumps(hits))
+raise SystemExit(1 if hits else 0)
+"""
+
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        check=False,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert json.loads(result.stdout) == []

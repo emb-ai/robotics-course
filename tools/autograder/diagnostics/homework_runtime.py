@@ -10,10 +10,13 @@ from __future__ import annotations
 
 import contextlib
 import dataclasses
+import importlib
 import importlib.util
 import multiprocessing as mp
 import queue
+import shutil
 import sys
+import tempfile
 import time
 import traceback
 from dataclasses import dataclass
@@ -67,8 +70,10 @@ def submitted_file(context: Any, filename: str) -> Path | None:
 
 
 def import_paths(context: Any) -> list[Path]:
+    submission_dir = Path(context.normalized_submission_dir)
     paths = [
-        Path(context.normalized_submission_dir),
+        submission_dir,
+        submission_dir.parent,
         homework_dir(context),
         dev_homework_dir(context),
     ]
@@ -81,21 +86,65 @@ def isolated_homework_imports(context: Any, extra_paths: list[Path] | None = Non
 
     old_path = list(sys.path)
     before_modules = set(sys.modules)
-    paths = [Path(path) for path in (extra_paths or [])] + import_paths(context)
-    for path in reversed(paths):
-        raw = str(path)
-        if raw not in sys.path:
-            sys.path.insert(0, raw)
+    old_submission_dir = Path(context.normalized_submission_dir)
+    with tempfile.TemporaryDirectory(prefix="diagnostic_homework_") as tmpdir:
+        context.normalized_submission_dir = _prepare_runtime_homework(context, old_submission_dir, Path(tmpdir))
+        paths = [Path(path) for path in (extra_paths or [])] + import_paths(context)
+        for path in reversed(paths):
+            raw = str(path)
+            if raw not in sys.path:
+                sys.path.insert(0, raw)
+        try:
+            yield
+        finally:
+            for name in list(sys.modules):
+                if name in before_modules:
+                    continue
+                root = name.split(".", 1)[0]
+                if root in HOMEWORK_MODULE_ROOTS or name.startswith("_diagnostic_"):
+                    sys.modules.pop(name, None)
+            context.normalized_submission_dir = old_submission_dir
+            sys.path[:] = old_path
+
+
+def _prepare_runtime_homework(context: Any, source_submission_dir: Path, runtime_root: Path) -> Path:
+    """Create a temporary homework-shaped tree matching the Docker student mount."""
+
+    real_hw = homework_dir(context)
+    runtime_hw = runtime_root / str(context.topic_slug) / "homework"
+    runtime_solutions = runtime_hw / "solutions"
+    runtime_solutions.mkdir(parents=True, exist_ok=True)
+    (runtime_solutions / "__init__.py").write_text("", encoding="utf-8")
+
+    for filename in sorted(set(getattr(context, "submitted_files", []) or [])):
+        source = source_submission_dir / filename
+        if not source.is_file():
+            continue
+        destination = (runtime_solutions / filename).resolve()
+        destination.relative_to(runtime_solutions.resolve())
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
+
+    for sibling in ("assets", "lib", "tests", "literature"):
+        _mirror_homework_sibling(real_hw, runtime_hw, sibling)
+    return runtime_solutions
+
+
+def _mirror_homework_sibling(real_hw: Path, runtime_hw: Path, name: str) -> None:
+    source = real_hw / name
+    if not source.exists():
+        return
+    destination = runtime_hw / name
+    if destination.exists():
+        return
     try:
-        yield
-    finally:
-        for name in list(sys.modules):
-            if name in before_modules:
-                continue
-            root = name.split(".", 1)[0]
-            if root in HOMEWORK_MODULE_ROOTS or name.startswith("_diagnostic_"):
-                sys.modules.pop(name, None)
-        sys.path[:] = old_path
+        destination.symlink_to(source, target_is_directory=source.is_dir())
+    except OSError:
+        if source.is_dir():
+            shutil.copytree(source, destination)
+        else:
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination)
 
 
 def load_module_from_path(module_name: str, path: str | Path) -> Any:
@@ -109,13 +158,22 @@ def load_module_from_path(module_name: str, path: str | Path) -> Any:
     return module
 
 
+def _import_package_module_from_path(package_name: str, stem: str, path: Path) -> Any:
+    package_root = str(path.parent.parent)
+    if package_root not in sys.path:
+        sys.path.insert(0, package_root)
+    importlib.invalidate_caches()
+    return importlib.import_module(f"{package_name}.{stem}")
+
+
 def load_submitted_module(context: Any, filename: str, module_suffix: str = "") -> Any:
     path = submitted_file(context, filename)
     if path is None:
         raise FileNotFoundError(f"submitted file not found: {filename}")
     stem = Path(filename).stem
-    suffix = f"_{module_suffix}" if module_suffix else ""
-    return load_module_from_path(f"_diagnostic_student_{context.student_id}_{stem}{suffix}", path)
+    if not module_suffix:
+        return _import_package_module_from_path("solutions", stem, path)
+    return load_module_from_path(f"_diagnostic_student_{context.student_id}_{stem}_{module_suffix}", path)
 
 
 def load_reference_module(context: Any, filename: str, module_suffix: str = "") -> Any:
@@ -123,8 +181,9 @@ def load_reference_module(context: Any, filename: str, module_suffix: str = "") 
     if path is None:
         raise FileNotFoundError(f"reference file not found: {filename}")
     stem = Path(filename).stem
-    suffix = f"_{module_suffix}" if module_suffix else ""
-    return load_module_from_path(f"_diagnostic_reference_{context.student_id}_{stem}{suffix}", path)
+    if not module_suffix:
+        return _import_package_module_from_path("reference_solution", stem, path)
+    return load_module_from_path(f"_diagnostic_reference_{context.student_id}_{stem}_{module_suffix}", path)
 
 
 def call_with_timeout(
@@ -210,4 +269,3 @@ def jsonable(value: Any) -> Any:
         except Exception:
             pass
     return value
-
