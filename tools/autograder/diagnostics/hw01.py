@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import ast
 import csv
 import io
 import json
 import math
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -31,6 +33,8 @@ from .homework_runtime import (
 
 HW01_TOPIC = "01-intro-and-kinematics"
 SO101_JOINT_NAMES = ("shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll")
+BROOM_LENGTH_RTOL = 1e-3
+BROOM_LENGTH_MARGIN = 1e-3
 
 
 class HW01BeadsComparePlugin:
@@ -134,9 +138,9 @@ class HW01BeadsComparePlugin:
 class HW01BroomRacingTrajectoryPlugin:
     id = "hw01_broom_racing_trajectory"
     label = "HW1 broom trajectory comparison"
-    timeout_sec = 45.0
+    timeout_sec = 240.0
 
-    def __init__(self, case_timeout_sec: float = 8.0):
+    def __init__(self, case_timeout_sec: float = 60.0):
         self.case_timeout_sec = case_timeout_sec
 
     def supports(self, context: DiagnosticContext) -> bool:
@@ -165,12 +169,13 @@ class HW01BroomRacingTrajectoryPlugin:
 
             lib = _broom_lib()
             cases = _broom_cases(context)
+            cases_to_score = _broom_cases_to_score(context, cases)
             results = [
                 _score_broom_case(index, case, student_mod, reference_mod, lib, self.case_timeout_sec)
-                for index, case in enumerate(cases)
+                for index, case in cases_to_score
             ]
             worst = _worst_broom_by_task(results)
-            payload = {"worst_cases": worst, "case_count": len(cases)}
+            payload = {"worst_cases": worst, "case_count": len(cases), "scored_case_count": len(cases_to_score)}
             artifacts = [
                 _write_json(context, "broom_racing", "broom_worst_cases.json", payload, "Worst broom cases by task."),
                 _write_text(
@@ -182,7 +187,7 @@ class HW01BroomRacingTrajectoryPlugin:
                 ),
             ]
             for item in worst:
-                png = _broom_plot_png(item, student_mod, reference_mod, lib, self.case_timeout_sec)
+                png = _broom_plot_png(item)
                 if png:
                     artifacts.append(
                         context.artifact_store.write_bytes_artifact(
@@ -208,8 +213,15 @@ class HW01BroomRacingTrajectoryPlugin:
                             description=f"Broom curvature and pitch trace for {item['task']}.",
                         )
                     )
-            failed = [item for item in worst if item.get("error") or item.get("constraint_errors")]
-            summary = f"Broom diagnostic: {len(worst)} task(s), {len(failed)} with errors or constraint violations."
+            failed = [
+                item
+                for item in worst
+                if item.get("error") or item.get("constraint_errors") or item.get("length_failed")
+            ]
+            summary = (
+                f"Broom diagnostic: {len(worst)} task(s), "
+                f"{len(failed)} with errors, constraint violations, or length overruns."
+            )
             return DiagnosticResult(
                 plugin_id=self.id,
                 problem_id=context.problem_id,
@@ -623,6 +635,119 @@ def _broom_cases(context: DiagnosticContext) -> list[dict[str, Any]]:
     return cases
 
 
+def _broom_cases_to_score(context: DiagnosticContext, cases: list[dict[str, Any]]) -> list[tuple[int, dict[str, Any]]]:
+    failed_cases = _broom_failed_length_cases_from_junit(context, cases)
+    if failed_cases:
+        return failed_cases
+    return list(enumerate(cases))
+
+
+def _broom_failed_length_cases_from_junit(
+    context: DiagnosticContext,
+    cases: list[dict[str, Any]],
+) -> list[tuple[int, dict[str, Any]]]:
+    junit_path = _broom_junit_path(context)
+    if junit_path is None:
+        return []
+    try:
+        from xml.etree import ElementTree
+
+        root = ElementTree.fromstring(junit_path.read_text(encoding="utf-8", errors="replace"))
+    except Exception:
+        return []
+
+    best_by_task: dict[str, tuple[float, int, dict[str, Any]]] = {}
+    for testcase in root.iter("testcase"):
+        name = str(testcase.get("name", ""))
+        task = _broom_task_from_test_name(name)
+        if not task:
+            continue
+        failure = testcase.find("failure")
+        if failure is None:
+            continue
+        message = str(failure.get("message", ""))
+        if "Student length" not in message or "ref" not in message:
+            continue
+        case = _broom_case_from_failure_text(failure.text or "")
+        if case is None:
+            continue
+        match = _match_broom_case(cases, case)
+        if match is None:
+            continue
+        score = _broom_length_failure_score(message)
+        previous = best_by_task.get(task)
+        if previous is None or score > previous[0]:
+            best_by_task[task] = (score, match[0], match[1])
+    return [(index, case) for _, index, case in best_by_task.values()]
+
+
+def _broom_junit_path(context: DiagnosticContext) -> Path | None:
+    student_path_id = str(context.student_result.get("student_path_id") or "")
+    candidates = []
+    if student_path_id:
+        student_dir = context.run_dir / "students" / student_path_id
+        candidates.extend(
+            [
+                student_dir / "test_results" / "test_broom_racing" / "pytest.xml",
+                student_dir / "pytest.xml",
+            ]
+        )
+    try:
+        student_dir = context.artifact_store.student_dir(context.student_id)
+        candidates.extend(
+            [
+                student_dir / "test_results" / "test_broom_racing" / "pytest.xml",
+                student_dir / "pytest.xml",
+            ]
+        )
+    except Exception:
+        pass
+    for path in candidates:
+        if path.is_file():
+            return path
+    return None
+
+
+def _broom_task_from_test_name(name: str) -> str | None:
+    for task in ("gate_pass", "catch_snitch", "catch_ball_and_gate"):
+        if name.startswith(f"test_{task}_length_vs_reference"):
+            return task
+    return None
+
+
+def _broom_case_from_failure_text(text: str) -> dict[str, Any] | None:
+    match = re.search(r"case = (\{.*?\})(?:\n|$)", text)
+    if not match:
+        return None
+    try:
+        value = ast.literal_eval(match.group(1))
+    except Exception:
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def _broom_length_failure_score(message: str) -> float:
+    match = re.search(r"Student length ([0-9.eE+-]+) > ref ([0-9.eE+-]+)", message)
+    if not match:
+        return 0.0
+    student = float(match.group(1))
+    reference = float(match.group(2))
+    return student / max(reference, 1e-12) - 1.0
+
+
+def _match_broom_case(cases: list[dict[str, Any]], target: dict[str, Any]) -> tuple[int, dict[str, Any]] | None:
+    target_key = _broom_case_key(target)
+    for index, case in enumerate(cases):
+        if _broom_case_key(case) == target_key:
+            return index, case
+    return None
+
+
+def _broom_case_key(case: dict[str, Any]) -> str:
+    payload = {key: value for key, value in case.items() if not str(key).startswith("_")}
+    return json.dumps(payload, sort_keys=True)
+
+
 def _configuration(lib: dict[str, Any], values: list[float]) -> Any:
     return lib["Configuration"](*(float(v) for v in values))
 
@@ -644,44 +769,108 @@ def _score_broom_case(
     start = _configuration(lib, case["start"])
     ref_func = getattr(reference_mod, f"{task}_ref", None) or getattr(reference_mod, task, None)
     student_func = getattr(student_mod, task, None)
-    record = {"task": task, "case_index": index, "source": source, "error": None, "score": float("inf")}
+    record = {
+        "task": task,
+        "case_index": index,
+        "source": source,
+        "error": None,
+        "score": float("inf"),
+        "case": case,
+    }
     if not callable(student_func) or not callable(ref_func):
         record["error"] = "missing student or reference function"
         return record
     try:
-        args, goal, goal_xyz = _broom_args(lib, task, start, case)
+        _broom_args(lib, task, start, case)
     except Exception as exc:
         record["error"] = f"case setup failed: {type(exc).__name__}: {exc}"
         return record
-    student = call_with_timeout(student_func, *args, timeout_sec=timeout_sec)
-    if not student.ok:
-        record["error"] = student.error
+
+    evaluated = call_with_timeout(
+        _evaluate_broom_case,
+        task,
+        case,
+        student_func,
+        ref_func,
+        lib,
+        timeout_sec=timeout_sec,
+    )
+    if not evaluated.ok:
+        record["error"] = evaluated.error
+        reference_only = call_with_timeout(
+            _evaluate_broom_reference_case,
+            task,
+            case,
+            ref_func,
+            lib,
+            timeout_sec=timeout_sec,
+        )
+        if reference_only.ok and isinstance(reference_only.value, dict):
+            record.update(reference_only.value)
         return record
-    reference = call_with_timeout(ref_func, *args, timeout_sec=timeout_sec)
-    if not reference.ok:
-        record["error"] = f"reference: {reference.error}"
-        return record
+
+    value = evaluated.value
+    if isinstance(value, dict):
+        record.update(value)
+    else:
+        record["error"] = f"unexpected worker result: {type(value).__name__}"
+    return record
+
+
+def _evaluate_broom_case(
+    task: str,
+    case: dict[str, Any],
+    student_func: Callable[..., Any],
+    ref_func: Callable[..., Any],
+    lib: dict[str, Any],
+) -> dict[str, Any]:
+    record = _evaluate_broom_reference_case(task, case, ref_func, lib)
+    start = _configuration(lib, case["start"])
+    args, goal, goal_xyz = _broom_args(lib, task, start, case)
     try:
-        student_length = float(lib["curve_length"](student.value))
-        reference_length = float(lib["curve_length"](reference.value))
-        ok, errors = lib["check_all"](student.value, start, goal=goal, goal_xyz=goal_xyz)
-        samples = _sample_curve(student.value)
-        nonfinite = not samples["finite"]
+        student_curve = student_func(*args)
+        student_samples = _sample_curve(student_curve)
+        student_length = float(lib["curve_length"](student_curve))
+        ok, errors = lib["check_all"](student_curve, start, goal=goal, goal_xyz=goal_xyz)
+        constraint_errors = list(errors)
+        if not student_samples["finite"]:
+            constraint_errors.append("nonfinite curve samples")
+        reference_length = float(record.get("reference_length", 0.0) or 0.0)
         ratio_delta = student_length / max(reference_length, 1e-12) - 1.0
+        length_limit = reference_length * (1.0 + BROOM_LENGTH_RTOL) + BROOM_LENGTH_MARGIN
+        length_failed = student_length > length_limit
         record.update(
             {
+                "error": None,
                 "student_length": student_length,
-                "reference_length": reference_length,
                 "ratio_delta": ratio_delta,
-                "constraint_errors": list(errors) + (["nonfinite curve samples"] if nonfinite else []),
-                "score": float("inf") if (not ok or nonfinite) else ratio_delta,
-                "samples": samples,
-                "case": case,
+                "length_limit": length_limit,
+                "length_failed": length_failed,
+                "constraint_errors": constraint_errors,
+                "student_samples": student_samples,
+                "samples": student_samples,
+                "score": float("inf") if (not ok or constraint_errors) else ratio_delta,
             }
         )
     except Exception as exc:
-        record["error"] = f"{type(exc).__name__}: {exc}"
+        record.update({"error": f"{type(exc).__name__}: {exc}", "score": float("inf")})
     return record
+
+
+def _evaluate_broom_reference_case(
+    task: str,
+    case: dict[str, Any],
+    ref_func: Callable[..., Any],
+    lib: dict[str, Any],
+) -> dict[str, Any]:
+    start = _configuration(lib, case["start"])
+    args, _, _ = _broom_args(lib, task, start, case)
+    ref_curve = ref_func(*args)
+    reference_samples = _sample_curve(ref_curve)
+    return {
+        "reference_length": float(lib["curve_length"](ref_curve)),
+        "reference_samples": reference_samples,
+    }
 
 
 def _broom_args(lib: dict[str, Any], task: str, start: Any, case: dict[str, Any]) -> tuple[tuple[Any, ...], Any | None, Any | None]:
@@ -767,8 +956,10 @@ def _broom_markdown(worst: list[dict[str, Any]]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def _broom_plot_png(item: dict[str, Any], student_mod: Any, reference_mod: Any, lib: dict[str, Any], timeout_sec: float) -> bytes | None:
-    if item.get("error") or "case" not in item:
+def _broom_plot_png(item: dict[str, Any]) -> bytes | None:
+    student = item.get("student_samples")
+    reference = item.get("reference_samples")
+    if not student and not reference:
         return None
     try:
         import matplotlib
@@ -777,23 +968,29 @@ def _broom_plot_png(item: dict[str, Any], student_mod: Any, reference_mod: Any, 
         import matplotlib.pyplot as plt
 
         task = item["task"]
-        case = item["case"]
-        start = _configuration(lib, case["start"])
-        args, _, _ = _broom_args(lib, task, start, case)
-        student_func = getattr(student_mod, task)
-        ref_func = getattr(reference_mod, f"{task}_ref", None) or getattr(reference_mod, task)
-        s_curve = call_with_timeout(student_func, *args, timeout_sec=timeout_sec).value
-        r_curve = call_with_timeout(ref_func, *args, timeout_sec=timeout_sec).value
-        s = _sample_curve(s_curve)
-        r = _sample_curve(r_curve)
-        fig, ax = plt.subplots(figsize=(6, 5))
-        ax.plot(s["x"], s["y"], label="student", color="tab:blue")
-        ax.plot(r["x"], r["y"], label="reference", color="tab:orange")
-        ax.scatter([start.x], [start.y], c="black", label="start")
-        ax.set_aspect("equal", adjustable="box")
-        ax.grid(True, alpha=0.3)
-        ax.legend(fontsize=8)
-        ax.set_title(f"{task} trajectory")
+        case = item.get("case") or {}
+        fig, axes = plt.subplots(1, 3, figsize=(12, 4))
+        projections = (("x", "y", "xy"), ("x", "z", "xz"), ("y", "z", "yz"))
+        for ax, (a, b, title) in zip(axes, projections):
+            if reference:
+                ax.plot(reference[a], reference[b], label="reference", color="tab:orange", linewidth=1.8)
+            if student:
+                ax.plot(student[a], student[b], label="student", color="tab:blue", linewidth=1.8)
+            _plot_broom_case_markers(ax, case, a, b)
+            ax.set_aspect("equal", adjustable="box")
+            ax.grid(True, alpha=0.3)
+            ax.set_xlabel(a)
+            ax.set_ylabel(b)
+            ax.set_title(title)
+        handles, labels = axes[0].get_legend_handles_labels()
+        if handles:
+            fig.legend(handles, labels, loc="upper center", ncol=min(len(handles), 4), fontsize=8)
+        detail = ""
+        if item.get("student_length") is not None and item.get("reference_length") is not None:
+            detail = f" student={item['student_length']:.4f}, ref={item['reference_length']:.4f}"
+        elif item.get("error"):
+            detail = f" {item['error']}"
+        fig.suptitle(f"{task} trajectory{detail}", fontsize=10)
         fig.tight_layout()
         buf = io.BytesIO()
         fig.savefig(buf, format="png", dpi=130)
@@ -801,6 +998,22 @@ def _broom_plot_png(item: dict[str, Any], student_mod: Any, reference_mod: Any, 
         return buf.getvalue()
     except Exception:
         return None
+
+
+def _plot_broom_case_markers(ax: Any, case: dict[str, Any], a: str, b: str) -> None:
+    coords = {"x": 0, "y": 1, "z": 2}
+    ai = coords[a]
+    bi = coords[b]
+    start = case.get("start")
+    if start:
+        ax.scatter([start[ai]], [start[bi]], c="black", marker="o", s=35, label="start", zorder=5)
+    goal = case.get("goal")
+    if goal:
+        ax.scatter([goal[ai]], [goal[bi]], c="tab:red", marker="x", s=45, label="goal", zorder=5)
+    goal_xyz = case.get("goal_xyz")
+    if goal_xyz:
+        label = "ball" if case.get("task") == "catch_ball_and_gate" else "goal_xyz"
+        ax.scatter([goal_xyz[ai]], [goal_xyz[bi]], c="tab:green", marker="s", s=35, label=label, zorder=5)
 
 
 def _broom_trace_plot_png(item: dict[str, Any]) -> bytes | None:

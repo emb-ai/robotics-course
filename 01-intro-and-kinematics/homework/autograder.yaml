@@ -21,7 +21,7 @@ metrics:
     direction: minimize
 
 limits:
-  timeout_sec: 1200
+  timeout_sec: 600
   memory_mb: 512
   cpus: 1
   network: none

@@ -312,6 +312,53 @@ def test_hw01_broom_trajectory_writes_worst_cases_and_plots(tmp_path):
     assert any(path.endswith(".png") for path in paths)
 
 
+def test_hw01_broom_trajectory_plots_nested_curve_closures_that_fail_length(tmp_path):
+    repo_root = tmp_path / "repo"
+    tests_dir = repo_root / TOPIC / "homework" / "tests"
+    tests_dir.mkdir(parents=True, exist_ok=True)
+    (tests_dir / "broom_racing_open_test_cases.json").write_text(
+        json.dumps([{"task": "gate_pass", "start": [0, 0, 0, 0, 0], "goal": [1, 0, 0, 0, 0]}]),
+        encoding="utf-8",
+    )
+    reference_source = (
+        "import numpy as np\n"
+        "def _curve(start, goal):\n"
+        "    def curve(s):\n"
+        "        t=float(np.asarray(s).flat[0])\n"
+        "        return type('C', (), {'x': start.x + (goal.x-start.x)*t, 'y': start.y + (goal.y-start.y)*t, 'z': start.z + (goal.z-start.z)*t, 'theta': 0.0, 'phi': 0.0})()\n"
+        "    return curve\n"
+        "def gate_pass_ref(start, goal): return _curve(start, goal)\n"
+        "def catch_snitch_ref(start, goal): return _curve(start, goal)\n"
+        "def catch_ball_and_gate_ref(start, intermediate, final): return _curve(start, final)\n"
+    )
+    student_source = (
+        "import numpy as np\n"
+        "def _long_curve(start, goal):\n"
+        "    def curve(s):\n"
+        "        t=float(np.asarray(s).flat[0])\n"
+        "        bump=4.0*t*(1.0-t)\n"
+        "        return type('C', (), {'x': start.x + (goal.x-start.x)*t, 'y': start.y + (goal.y-start.y)*t + bump, 'z': start.z + (goal.z-start.z)*t, 'theta': 0.0, 'phi': 0.0})()\n"
+        "    return curve\n"
+        "def gate_pass(start, goal): return _long_curve(start, goal)\n"
+        "def catch_snitch(start, goal): return _long_curve(start, goal)\n"
+        "def catch_ball_and_gate(start, intermediate, final): return _long_curve(start, final)\n"
+    )
+    _write_hw01_reference(repo_root, "broom_racing.py", reference_source)
+    context = _context(tmp_path, repo_root, "broom_racing", "broom_racing.py", student_source)
+
+    result = HW01BroomRacingTrajectoryPlugin(case_timeout_sec=1.0).run(context)
+
+    paths = [ref["path"] for ref in result.artifacts]
+    assert any(path.endswith("broom_gate_pass_trajectory.png") for path in paths)
+    report_ref = next(ref for ref in result.artifacts if ref["path"].endswith("broom_worst_cases.json"))
+    report = json.loads((context.run_dir / report_ref["path"]).read_text())
+    worst = report["worst_cases"][0]
+    assert worst["error"] is None
+    assert worst["student_length"] > worst["reference_length"] * (1 + 1e-3) + 1e-3
+    assert "student_samples" in worst
+    assert "reference_samples" in worst
+
+
 def test_hw01_broom_trajectory_loads_reference_package_relative_imports(tmp_path):
     repo_root = tmp_path / "repo"
     tests_dir = repo_root / TOPIC / "homework" / "tests"

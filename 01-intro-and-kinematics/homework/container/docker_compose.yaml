@@ -8,6 +8,8 @@ services:
     build:
       context: ${REPO_ROOT}
       dockerfile: 01-intro-and-kinematics/homework/container/Dockerfile
+      args:
+        INSTALL_CUDA_TORCH: ${INSTALL_CUDA_TORCH:-0}
     volumes:
       - ${REPO_ROOT}:/app:ro
       - ${REPO_ROOT}/dev/01-intro-and-kinematics/homework/reference_solution:/app/01-intro-and-kinematics/homework/reference_solution:ro

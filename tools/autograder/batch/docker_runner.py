@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 import subprocess
 import tempfile
 import time
@@ -47,6 +48,7 @@ def run_student_tests(
     selected_tests: list[str],
     result_dir: str | Path,
     repo_root: str | Path | None = None,
+    source_dir: str | Path | None = None,
 ) -> DockerRunResult:
     """Run selected tests for one student and write pytest XML under ``result_dir``."""
 
@@ -61,6 +63,8 @@ def run_student_tests(
     with tempfile.TemporaryDirectory(prefix="student_", dir=tmp_base) as tmpdir:
         solutions_dir = Path(tmpdir).resolve()
         (solutions_dir / "__init__.py").write_text("", encoding="utf-8")
+        if source_dir is not None:
+            _copy_support_files(Path(source_dir), solutions_dir, set(files))
         for name, content in files.items():
             target = (solutions_dir / name).resolve()
             target.relative_to(solutions_dir)
@@ -109,6 +113,33 @@ def run_student_tests(
         elapsed_sec=time.monotonic() - started,
         pytest_xml=pytest_xml,
     )
+
+
+def _copy_support_files(source_dir: Path, solutions_dir: Path, solution_filenames: set[str]) -> None:
+    """Copy non-solution support files into the mounted solutions package."""
+
+    if not source_dir.is_dir():
+        return
+    for source in sorted(source_dir.rglob("*")):
+        if source.is_dir() or source.is_symlink():
+            continue
+        relative = source.relative_to(source_dir)
+        if _skip_support_file(relative, solution_filenames):
+            continue
+        target = (solutions_dir / relative).resolve()
+        target.relative_to(solutions_dir)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+
+
+def _skip_support_file(relative_path: Path, solution_filenames: set[str]) -> bool:
+    parts = relative_path.parts
+    if not parts or any(part in {"", ".", "..", "__MACOSX", "__pycache__"} for part in parts):
+        return True
+    name = relative_path.name
+    if name == ".DS_Store" or name.startswith("._"):
+        return True
+    return len(parts) == 1 and name in solution_filenames
 
 
 def _write_override_yaml(spec: HomeworkSpec, directory: Path) -> Path:

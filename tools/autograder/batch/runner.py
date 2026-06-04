@@ -257,6 +257,7 @@ def _run_selected_tests(
             [selected_test],
             test_result_dir,
             repo_root=repo_root,
+            source_dir=student.source_dir,
         )
         docker_result = _coerce_docker_result(docker_raw, test_result_dir)
         per_test_results[test_file] = docker_result

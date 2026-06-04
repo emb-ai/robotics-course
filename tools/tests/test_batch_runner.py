@@ -50,7 +50,7 @@ def test_run_batch_writes_artifacts_and_continues_after_failed_student(tmp_path,
     def fake_prebuild(spec, repo_root=None):
         return None
 
-    def fake_run(spec, student_id, files, selected_tests, result_dir, repo_root=None):
+    def fake_run(spec, student_id, files, selected_tests, result_dir, repo_root=None, source_dir=None):
         pytest_xml = result_dir / "pytest.xml"
         if student_id == "Alice":
             pytest_xml.write_text(
@@ -93,7 +93,7 @@ def test_run_batch_runs_selected_tests_individually_so_timeout_does_not_mask_oth
     def fake_prebuild(spec, repo_root=None):
         return None
 
-    def fake_run(spec, student_id, files, selected_tests, result_dir, repo_root=None):
+    def fake_run(spec, student_id, files, selected_tests, result_dir, repo_root=None, source_dir=None):
         calls.append(list(selected_tests))
         if selected_tests == ["tests/test_beads.py"]:
             return {"exit_code": 143, "stdout": "collecting ...", "stderr": "", "elapsed_sec": 120.0}
@@ -138,7 +138,7 @@ def test_run_batch_adds_diagnostics_only_for_failed_students(tmp_path, monkeypat
     def fake_prebuild(spec, repo_root=None):
         return None
 
-    def fake_run(spec, student_id, files, selected_tests, result_dir, repo_root=None):
+    def fake_run(spec, student_id, files, selected_tests, result_dir, repo_root=None, source_dir=None):
         pytest_xml = result_dir / "pytest.xml"
         if student_id == "Alice":
             pytest_xml.write_text(
@@ -198,7 +198,7 @@ def test_run_batch_continues_when_diagnostics_fail(tmp_path, monkeypatch):
     def fake_prebuild(spec, repo_root=None):
         return None
 
-    def fake_run(spec, student_id, files, selected_tests, result_dir, repo_root=None):
+    def fake_run(spec, student_id, files, selected_tests, result_dir, repo_root=None, source_dir=None):
         pytest_xml = result_dir / "pytest.xml"
         pytest_xml.write_text(
             '<testsuite><testcase file="tests/test_beads.py" name="test_bad">'
@@ -229,7 +229,7 @@ def test_run_batch_continues_when_feedback_fails(tmp_path, monkeypatch):
     def fake_prebuild(spec, repo_root=None):
         return None
 
-    def fake_run(spec, student_id, files, selected_tests, result_dir, repo_root=None):
+    def fake_run(spec, student_id, files, selected_tests, result_dir, repo_root=None, source_dir=None):
         pytest_xml = result_dir / "pytest.xml"
         pytest_xml.write_text(
             '<testsuite><testcase file="tests/test_beads.py" name="test_bad">'
@@ -268,7 +268,7 @@ def test_run_batch_can_disable_diagnostics_and_feedback(tmp_path, monkeypatch):
     def fake_prebuild(spec, repo_root=None):
         return None
 
-    def fake_run(spec, student_id, files, selected_tests, result_dir, repo_root=None):
+    def fake_run(spec, student_id, files, selected_tests, result_dir, repo_root=None, source_dir=None):
         pytest_xml = result_dir / "pytest.xml"
         pytest_xml.write_text(
             '<testsuite><testcase file="tests/test_beads.py" name="test_bad">'

@@ -4,3 +4,9 @@ scipy
 matplotlib
 IPython
 mujoco
+torch
+gymnasium
+shapely
+opencv-python-headless
+networkx
+scikit-image

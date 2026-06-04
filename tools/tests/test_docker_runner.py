@@ -48,6 +48,22 @@ def test_run_writes_files_and_calls_docker(mock_subprocess, mock_week_registry):
     assert vol_idx >= 0 or any("-v" in str(a) or "solutions" in str(a) for a in call_args[0])
 
 
+def test_run_uses_prepared_mount_dir(mock_subprocess, mock_week_registry, tmp_path):
+    mock_subprocess.return_value = MagicMock(returncode=0, stdout="ok", stderr="")
+    mount_dir = tmp_path / "prepared"
+    mount_dir.mkdir()
+    (mount_dir / "__init__.py").write_text("", encoding="utf-8")
+    (mount_dir / "beads.py").write_text("x = 1", encoding="utf-8")
+
+    exit_code, stdout, stderr = run("01", {"beads.py": "ignored"}, prepared_mount_dir=mount_dir)
+
+    assert exit_code == 0
+    assert stdout == "ok"
+    cmd = mock_subprocess.call_args[0][0]
+    vol_idx = cmd.index("-v")
+    assert str(mount_dir.resolve()) in cmd[vol_idx + 1]
+
+
 def test_run_skips_path_traversal(mock_subprocess, mock_week_registry):
     mock_subprocess.return_value = MagicMock(returncode=0, stdout="", stderr="")
     run("01", {"../evil.py": "bad"})  # should be skipped

@@ -51,6 +51,39 @@ def test_batch_docker_runner_uses_unique_project_result_mount_and_junit(tmp_path
     assert not any("TELEGRAM" in key or "REDIS" in key for key in run_mock.call_args[1]["env"])
 
 
+def test_batch_docker_runner_mounts_support_files_from_source_dir(tmp_path):
+    result_dir = tmp_path / "results"
+    source_dir = tmp_path / "source"
+    support_dir = source_dir / "weights"
+    support_dir.mkdir(parents=True)
+    (source_dir / "beads.py").write_text("answer = 'stale'\n")
+    (source_dir / "helper.py").write_text("HELPER = True\n")
+    (support_dir / "policy.npz").write_bytes(b"weights")
+
+    def fake_run(cmd, **kwargs):
+        solutions_mount = next(
+            arg for arg in cmd if arg.endswith(":/app/01-intro-and-kinematics/homework/solutions")
+        )
+        mounted_dir = Path(solutions_mount.split(":", 1)[0])
+        assert (mounted_dir / "helper.py").read_text() == "HELPER = True\n"
+        assert (mounted_dir / "weights" / "policy.npz").read_bytes() == b"weights"
+        assert (mounted_dir / "beads.py").read_text() == "answer = 42\n"
+        return MagicMock(returncode=0, stdout="ok", stderr="")
+
+    with patch("autograder.batch.docker_runner.subprocess.run", side_effect=fake_run):
+        result = run_student_tests(
+            _spec(tmp_path),
+            student_id="Alice",
+            files={"beads.py": "answer = 42\n"},
+            selected_tests=["tests/test_beads.py"],
+            result_dir=result_dir,
+            repo_root=tmp_path,
+            source_dir=source_dir,
+        )
+
+    assert result.exit_code == 0
+
+
 def test_prebuild_homework_image_runs_compose_build(tmp_path):
     from autograder.batch.docker_runner import prebuild_homework_image
 
